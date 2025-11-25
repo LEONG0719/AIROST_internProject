@@ -7,5 +7,5 @@ import { RouterView } from 'vue-router'
 </script>
 
 <style>
-/* Optional: you can leave this empty or add global styles here */
+/* Optional: you can leave this empty or add global styles hereeee */
 </style>
