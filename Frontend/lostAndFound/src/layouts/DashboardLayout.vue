@@ -1,16 +1,36 @@
 <template>
-  <div class="flex">
-    <Sidebar />
-    <div class="flex-1 flex flex-col min-h-screen">
-      <Topbar />
-      <main class="p-6 bg-gray-50 flex-1">
-        <slot />
-      </main>
-    </div>
+  <div class="min-h-screen bg-gray-100">
+    
+    <!-- Header Component -->
+    <AppHeader @toggle-mobile-menu="handleToggleMobileMenu" ref="headerRef" />
+
+    <!-- Mobile Menu Component -->
+    <MobileMenu :is-open="isMobileMenuOpen" @close="closeMobileMenu" />
+
+    <!-- Main Content Slot -->
+    <main class="p-6">
+      <slot></slot>
+    </main>
+
   </div>
 </template>
 
-<script setup lang="ts">
-import Sidebar from '../components/Sidebar.vue'
-import Topbar from '../components/Topbar.vue'
+<script setup>
+import { ref } from 'vue'
+import AppHeader from '../components/general/AppHeader.vue'
+import MobileMenu from '../components/general/MobileMenu.vue'
+
+const isMobileMenuOpen = ref(false)
+const headerRef = ref(null)
+
+const handleToggleMobileMenu = (isOpen) => {
+  isMobileMenuOpen.value = isOpen
+}
+
+const closeMobileMenu = () => {
+  isMobileMenuOpen.value = false
+  if (headerRef.value) {
+    headerRef.value.isMobileMenuOpen = false
+  }
+}
 </script>
