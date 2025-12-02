@@ -14,6 +14,7 @@ public class LostClaimRequest {
     private String color;
     private String brand;
     private String remarks;
+    private String specialMarking;
 
     // Optional: for Layer 3 verification later
     private String extraProofUrls;
