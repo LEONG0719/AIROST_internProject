@@ -17,8 +17,8 @@
 
 <script setup>
 import { ref } from 'vue'
-import AppHeader from '../components/AppHeader.vue'
-import MobileMenu from '../components/MobileMenu.vue'
+import AppHeader from '../components/general/AppHeader.vue'
+import MobileMenu from '../components/general/MobileMenu.vue'
 
 const isMobileMenuOpen = ref(false)
 const headerRef = ref(null)
