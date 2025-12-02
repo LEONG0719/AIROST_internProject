@@ -20,7 +20,7 @@ public class EmailServiceImpl implements EmailService {
     @Override
     public void sendVerificationEmail(User user, String siteUrl) {
         String toAddress = user.getEmail();
-        String fromAddress = "your-email@gmail.com"; // Match application.properties
+        String fromAddress = "liankairong888@gmail.com"; // Match application.properties
         String senderName = "Airost Lost & Found";
         String subject = "Please verify your registration";
 
