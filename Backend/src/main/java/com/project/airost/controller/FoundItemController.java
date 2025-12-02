@@ -26,4 +26,9 @@ public class FoundItemController {
         FoundItem saved = repository.save(item);
         return ResponseEntity.ok(saved);
     }
+
+    @GetMapping("/browse/claimed")
+    public List<FoundItem> getClaimedItemsOnly() {
+        return repository.findByClaimedTrueOrderByFoundAtDesc();
+    }
 }

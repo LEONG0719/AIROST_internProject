@@ -15,7 +15,7 @@ public class LostClaimServiceImpl implements LostClaimService {
 
     private final LostClaimRepository lostClaimRepo;
     private final FoundItemRepository foundItemRepo;
-    private final UserRepository userRepo; // Required to fix the user error
+    private final UserRepository userRepo;
     private final AdminVerificationRepository adminVerificationRepo;
     private final AiService aiService;
 
@@ -34,25 +34,19 @@ public class LostClaimServiceImpl implements LostClaimService {
     @Override
     @Transactional
     public LostClaim submitClaim(LostClaim claim) {
-        // ============================================================
-        // 🚨 FIX: FETCH REAL USER FROM DB TO PREVENT HIBERNATE ERROR
-        // ============================================================
+        // 1. Fetch Real User
         if (claim.getUser() == null || claim.getUser().getId() == null) {
             throw new IllegalArgumentException("User ID is required");
         }
-
         User realUser = userRepo.findById(claim.getUser().getId())
                 .orElseThrow(() -> new RuntimeException("User not found in database"));
-
-        // Attach the managed User entity to the claim
         claim.setUser(realUser);
 
-        // Set default status if missing
         if (claim.getStatus() == null) {
             claim.setStatus(LostClaim.ClaimStatus.PENDING);
         }
 
-        // Step: persist initial claim as PENDING
+        // 2. Initial Save
         LostClaim saved = lostClaimRepo.save(claim);
 
         // ============================================================
@@ -76,18 +70,23 @@ public class LostClaimServiceImpl implements LostClaimService {
             }
         }
 
+        // --- IMAGE DECISION ---
         if (bestImageScore >= 85) {
             saved.setStatus(LostClaim.ClaimStatus.APPROVED);
             saved.setBestSimilarityScore(bestImageScore);
             saved.setMatchedFoundItem(bestImageMatch);
+
+            // ✅ AUTO-UPDATE FOUND ITEM TO CLAIMED
+            if (bestImageMatch != null) {
+                bestImageMatch.setClaimed(true);
+                foundItemRepo.save(bestImageMatch);
+            }
+
             return lostClaimRepo.save(saved);
         } else if (bestImageScore >= 60) {
             saved.setStatus(LostClaim.ClaimStatus.LOW_CONFIDENCE);
             saved.setBestSimilarityScore(bestImageScore);
             saved.setMatchedFoundItem(bestImageMatch);
-            // move to Layer 2 for further text check
-        } else {
-            // either no image or <60 => go to Layer 2
         }
 
         // ============================================================
@@ -109,28 +108,30 @@ public class LostClaimServiceImpl implements LostClaimService {
             }
         }
 
-        // Decision after Layer 2
+        // --- TEXT DECISION ---
         if (bestTextScore >= 80) {
             saved.setStatus(LostClaim.ClaimStatus.APPROVED);
             saved.setBestSimilarityScore(bestTextScore);
             saved.setMatchedFoundItem(bestTextMatch);
+
+            // ✅ AUTO-UPDATE FOUND ITEM TO CLAIMED
+            if (bestTextMatch != null) {
+                bestTextMatch.setClaimed(true);
+                foundItemRepo.save(bestTextMatch);
+            }
+
             return lostClaimRepo.save(saved);
         } else if (bestTextScore >= 60) {
             saved.setStatus(LostClaim.ClaimStatus.NEEDS_MANUAL_CHECK);
             saved.setBestSimilarityScore(bestTextScore);
             saved.setMatchedFoundItem(bestTextMatch);
-            // notify admin for manual verification (hook for notification)
             return lostClaimRepo.save(saved);
         } else {
-            // If we are here, Text failed (<60).
-            // BUT check if Layer 1 (Image) had a "Low Confidence" match (e.g. 70%)
-            // If Image was 70% but text is 20%, we should probably keep the Image result (Low Confidence/Manual Check)
+            // Check if Layer 1 (Image) had a "Low Confidence" match, keep it if Text failed
             if (saved.getStatus() == LostClaim.ClaimStatus.LOW_CONFIDENCE) {
-                // Keep the Layer 1 result
                 return lostClaimRepo.save(saved);
             }
 
-            // No match found
             saved.setStatus(LostClaim.ClaimStatus.NO_MATCH);
             saved.setBestSimilarityScore(bestTextScore >= 0 ? bestTextScore : null);
             return lostClaimRepo.save(saved);
@@ -149,6 +150,14 @@ public class LostClaimServiceImpl implements LostClaimService {
                 .orElseThrow(() -> new RuntimeException("Claim not found"));
 
         claim.setStatus(LostClaim.ClaimStatus.APPROVED);
+
+        // ✅ AUTO-UPDATE FOUND ITEM TO CLAIMED (If Admin Manually Approves)
+        if (claim.getMatchedFoundItem() != null) {
+            FoundItem matchedItem = claim.getMatchedFoundItem();
+            matchedItem.setClaimed(true);
+            foundItemRepo.save(matchedItem);
+        }
+
         lostClaimRepo.save(claim);
 
         AdminVerification av = new AdminVerification();
@@ -178,7 +187,6 @@ public class LostClaimServiceImpl implements LostClaimService {
         return claim;
     }
 
-    // Helper method to join strings cleanly
     private String joinNonNull(String... parts) {
         StringBuilder sb = new StringBuilder();
         for (String part : parts) {
