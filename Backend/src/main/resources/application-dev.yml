@@ -23,7 +23,7 @@ spring:
     port: 587
     username: liankairong888@gmail.com
     # NOTE: For Gmail, this is an "App Password", not your normal login password
-    password: qwertyuiop
+    password: w r j w u h o q p n g c j d x w
     properties:
       mail:
         smtp:
