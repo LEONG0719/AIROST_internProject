@@ -1,21 +1,43 @@
 package com.project.airost.domain;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
+import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
 import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.RequiredArgsConstructor;
 
-@Data //setter and getter
-@NoArgsConstructor
-@Entity(name = "user") //database table name
+import java.time.Instant;
+
+@Data
+@RequiredArgsConstructor
+@AllArgsConstructor
+@Entity
+@Table(name = "users")
 public class User {
+    public enum Role { USER, ADMIN }
 
-    @Id //notify springboot this is an id (userid)
-    @Column(name = "user_id")
-    private Long userId;
-    @Column(name = "username")
-    private String username;
+    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @Column(nullable=false, unique=true)
     private String email;
 
+    @Column(nullable=false)
+    private String passwordHash; // store bcrypt
+
+    @Column(nullable=false)
+    private String fullName;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable=false)
+    private Role role = Role.USER;
+
+    private Instant createdAt = Instant.now();
+
+    //for verification
+    @Column(name = "is_enabled")
+    private boolean enabled = false; // Default is FALSE (cannot login)
+
+    @Column(name = "verification_code", length = 64)
+    private String verificationCode; // Stores the random token
 }
+    // getters / setters / constructors
