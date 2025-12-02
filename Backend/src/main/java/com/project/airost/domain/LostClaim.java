@@ -27,6 +27,8 @@ public class LostClaim {
     @Column(length=2000)
     private String description; // user text description
 
+    private String specialMarking;
+
     private String category;
     private String color;
     private String brand;

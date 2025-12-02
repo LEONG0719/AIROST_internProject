@@ -49,6 +49,7 @@ public class LostClaimController {
         claim.setColor(request.getColor());
         claim.setBrand(request.getBrand());
         claim.setRemarks(request.getRemarks());
+        claim.setSpecialMarking(request.getSpecialMarking());
 
         // 3. Submit
         LostClaim saved = claimService.submitClaim(claim);
