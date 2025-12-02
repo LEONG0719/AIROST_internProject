@@ -231,11 +231,14 @@
 
 <script setup lang="ts">
 import { ref } from 'vue'
+import { useToast } from "vue-toastification"  
 import DashboardLayout from '../layouts/DashboardLayout.vue'
 import InstructionCard from '../components/ui/InstructionCard.vue'
 import ImageUpload from '../components/ui/ImageUpload.vue'
 import AIMatchingInfo from '../components/ui/AIMatchingInfo.vue'
 import LocationSelect from '../components/form/LocationSelect.vue'
+
+const toast = useToast()  
 
 interface FormData {
   itemName: string
@@ -269,8 +272,6 @@ const form = ref<FormData>({
 
 const imagePreview = ref<string | null>(null)
 const isSubmitting = ref(false)
-
-// Add a key to force re-render components
 const locationKey = ref(0)
 const imageKey = ref(0)
 
@@ -279,25 +280,24 @@ const handlePreviewUpdate = (preview: string | null) => {
 }
 
 const handleSubmit = async () => {
+  // Validation with toast
   if (!form.value.image) {
-    alert('Please upload an image of the found item')
+    toast.warning('Please upload an image of the found item')  
     return
   }
 
-  // Validate "Other" fields
   if (form.value.category === 'Others' && !form.value.otherCategory) {
-    alert('Please specify the category')
+    toast.warning('Please specify the category')  
     return
   }
 
   if (form.value.location === 'Other' && !form.value.otherLocation) {
-    alert('Please specify the location')
+    toast.warning('Please specify the location')  
     return
   }
 
-  // Validate storage location
   if (form.value.itemCurrentLocation === 'other_place' && !form.value.itemStorageLocation) {
-    alert('Please specify where the item is currently kept')
+    toast.warning('Please specify where the item is currently kept')  
     return
   }
 
@@ -320,7 +320,6 @@ const handleSubmit = async () => {
     
     formData.append('itemCurrentLocation', form.value.itemCurrentLocation)
     
-    // Add storage location if "other_place" is selected
     if (form.value.itemCurrentLocation === 'other_place') {
       formData.append('itemStorageLocation', form.value.itemStorageLocation)
     }
@@ -329,13 +328,14 @@ const handleSubmit = async () => {
       formData.append('image', form.value.image)
     }
 
+    // Simulate API call
     await new Promise(resolve => setTimeout(resolve, 2000))
 
-    alert('Found item reported successfully! Our AI will check for matches.')
+    toast.success('Found item reported successfully! Our AI will check for matches.')  
     resetForm()
   } catch (error) {
     console.error('Error submitting form:', error)
-    alert('Failed to submit report. Please try again.')
+    toast.error('Failed to submit report. Please try again.')  
   } finally {
     isSubmitting.value = false
   }
@@ -353,11 +353,10 @@ const resetForm = () => {
     location: '',
     otherLocation: '',
     itemCurrentLocation: '',
-    itemStorageLocation: '',  // Add this
+    itemStorageLocation: '',
     image: null
   }
   imagePreview.value = null
-  
   locationKey.value++
   imageKey.value++
 }
