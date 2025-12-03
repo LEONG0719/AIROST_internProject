@@ -234,7 +234,7 @@ import { ref } from 'vue'
 import { useToast } from "vue-toastification"  
 import DashboardLayout from '../layouts/DashboardLayout.vue'
 import InstructionCard from '../components/ui/InstructionCard.vue'
-import ImageUpload from '../components/ui/ImageUpload.vue'
+import ImageUpload from '../components/form/ImageUpload.vue'
 import AIMatchingInfo from '../components/ui/AIMatchingInfo.vue'
 import LocationSelect from '../components/form/LocationSelect.vue'
 
