@@ -16,7 +16,7 @@
               
               <div class="relative z-10">
                 <div class="flex items-center gap-3 mb-3">
-                  <div class="w-14 h-14 bg-yellow-400 rounded-full flex items-center justify-center text-3xl shadow-lg">
+                  <div class="w-14 h-14 bg-yellow-500 rounded-full flex items-center justify-center text-3xl shadow-lg">
                     🏆
                   </div>
                   <div>
@@ -30,7 +30,7 @@
                 </p>
                 
                 <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
-                  <div class="bg-blue-700 bg-opacity-40 backdrop-blur-md rounded-2xl p-4 hover:bg-opacity-30 transition">
+                  <div class="bg-blue-700 bg-opacity-20 backdrop-blur-md rounded-2xl p-4 hover:bg-opacity-30 transition">
                     <div class="flex items-center gap-2 mb-2">
                       <svg class="w-5 h-5 text-yellow-300" fill="currentColor" viewBox="0 0 20 20">
                         <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
@@ -52,7 +52,7 @@
                   
                   <div class="bg-blue-700 bg-opacity-20 backdrop-blur-md rounded-2xl p-4 hover:bg-opacity-30 transition">
                     <div class="flex items-center gap-2 mb-2">
-                      <svg class="w-5 h-5 text-green-300" fill="currentColor" viewBox="0 0 20 20">
+                      <svg class="w-5 h-5 text-blue-300" fill="currentColor" viewBox="0 0 20 20">
                         <path fill-rule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
                       </svg>
                       <div class="text-2xl font-bold text-white">{{ successRate }}%</div>
@@ -74,46 +74,46 @@
             </div>
 
             <!-- Top 3 Winners -->
-            <div class="bg-white rounded-2xl shadow-lg p-6">
-              <div class="flex items-center justify-between mb-6">
-                <h2 class="text-2xl font-bold text-gray-900">Top Champions</h2>
-                <span class="text-sm text-gray-500">This Month</span>
+            <div class="bg-white rounded-2xl shadow-lg p-4 md:p-6">
+              <div class="flex items-center justify-between mb-4 md:mb-6">
+                <h2 class="text-xl md:text-2xl font-bold text-gray-900">Top Champions</h2>
+                <span class="text-xs md:text-sm text-gray-500">This Month</span>
               </div>
 
-              <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div class="grid grid-cols-3 gap-2 md:gap-4">
                 <!-- Winner Cards -->
                 <div 
                   v-for="(winner, index) in topThree" 
                   :key="index"
-                  class="relative bg-gradient-to-br rounded-xl p-6 text-center transform hover:scale-105 transition-transform cursor-pointer"
+                  class="relative bg-gradient-to-br rounded-lg md:rounded-xl p-3 md:p-6 text-center transform hover:scale-105 transition-transform cursor-pointer"
                   :class="winner.gradient"
                 >
                   <!-- Rank Badge -->
-                  <div class="absolute -top-3 -right-3 w-12 h-12 rounded-full flex items-center justify-center text-xl font-bold shadow-lg"
+                  <div class="absolute -top-2 -right-2 w-8 h-8 md:w-12 md:h-12 rounded-full flex items-center justify-center text-sm md:text-xl font-bold shadow-lg"
                     :class="winner.badgeColor">
                     {{ winner.rank }}
                   </div>
 
                   <!-- Avatar -->
-                  <div class="relative w-20 h-20 mx-auto mb-4">
-                    <div class="w-full h-full rounded-full bg-white flex items-center justify-center text-2xl font-bold shadow-lg"
+                  <div class="relative w-12 h-12 md:w-20 md:h-20 mx-auto mb-2 md:mb-4">
+                    <div class="w-full h-full rounded-full bg-white flex items-center justify-center text-lg md:text-2xl font-bold shadow-lg"
                       :class="winner.avatarText">
                       {{ winner.name.charAt(0) }}
                     </div>
-                    <div v-if="winner.rank === 1" class="absolute -top-2 -right-2 text-3xl">👑</div>
+                    <div v-if="winner.rank === 1" class="absolute -top-1 -right-1 md:-top-2 md:-right-2 text-xl md:text-3xl">👑</div>
                   </div>
 
-                  <h3 class="font-bold text-gray-900 mb-1">{{ winner.name }}</h3>
-                  <p class="text-xs text-gray-600 mb-3">{{ winner.studentId }}</p>
+                  <h3 class="font-bold text-gray-900 mb-1 text-xs md:text-base truncate">{{ winner.name }}</h3>
+                  <p class="text-[10px] md:text-xs text-gray-600 mb-2 md:mb-3 truncate">{{ winner.studentId }}</p>
                   
-                  <div class="flex items-center justify-center gap-2 mb-2">
-                    <svg class="w-5 h-5 text-yellow-500" fill="currentColor" viewBox="0 0 20 20">
+                  <div class="flex items-center justify-center gap-1 md:gap-2 mb-1 md:mb-2">
+                    <svg class="w-3 h-3 md:w-5 md:h-5 text-yellow-500" fill="currentColor" viewBox="0 0 20 20">
                       <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
                     </svg>
-                    <span class="font-bold text-gray-900">{{ winner.points }}</span>
+                    <span class="font-bold text-gray-900 text-sm md:text-base">{{ winner.points }}</span>
                   </div>
                   
-                  <div class="text-xs text-gray-600">{{ winner.itemsFound }} items found</div>
+                  <div class="text-[10px] md:text-xs text-gray-600">{{ winner.itemsFound }} items</div>
                 </div>
               </div>
             </div>
