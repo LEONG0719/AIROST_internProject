@@ -17,6 +17,10 @@ public class FoundItem {
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @ManyToOne
+    @JoinColumn(name = "user_id")
+    private User user;
+
     @Column(nullable=false)
     private String title; // short title
 
@@ -25,6 +29,11 @@ public class FoundItem {
 
     @Column(nullable=false)
     private String category;
+
+    private String specialMarking;
+
+    // === NEW: Primary Image URL (Simpler than List for basic views) ===
+    private String imageUrl;
 
     private String color;
     private String brand;

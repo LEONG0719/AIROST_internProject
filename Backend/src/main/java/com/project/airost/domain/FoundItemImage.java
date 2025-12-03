@@ -21,5 +21,7 @@ public class FoundItemImage {
     @JoinColumn(name = "found_item_id")
     private FoundItem foundItem;
 
+
+
     // getters/setters
 }
