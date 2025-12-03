@@ -12,22 +12,25 @@
       >
         Home
       </router-link>
+      
       <router-link 
-        to="/lostItems" 
+        to="/ranking" 
         class="block w-full text-left hover:text-blue-600 py-2 px-2 rounded hover:bg-gray-50 transition"
-        :class="{ 'text-blue-600 bg-blue-50 font-semibold': isActive('/lost-items') }"
+        :class="{ 'text-blue-600 bg-blue-50 font-semibold': isActive('/ranking') }"
         @click="closeMenu"
       >
-        Lost Items
+        Ranking
       </router-link>
+      
       <router-link 
-        to="/foundItems" 
+        to="/report" 
         class="block w-full text-left hover:text-blue-600 py-2 px-2 rounded hover:bg-gray-50 transition"
-        :class="{ 'text-blue-600 bg-blue-50 font-semibold': isActive('/found-items') }"
+        :class="{ 'text-blue-600 bg-blue-50 font-semibold': isActive('/report') }"
         @click="closeMenu"
       >
-        Found Items
+        Report
       </router-link>
+      
       <router-link 
         to="/profile" 
         class="block w-full text-left hover:text-blue-600 py-2 px-2 rounded hover:bg-gray-50 transition"
@@ -65,7 +68,7 @@ const route = useRoute()
 const toast = useToast()
 
 const isActive = (path) => {
-  return route.path === path
+  return route.path === path || route.path.startsWith(path + '/')
 }
 
 const closeMenu = () => {

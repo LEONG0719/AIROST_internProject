@@ -16,20 +16,23 @@
       >
         Home
       </router-link>
+      
       <router-link 
-        to="/lostItems" 
+        to="/ranking" 
         class="hover:text-blue-600 transition"
-        :class="{ 'text-blue-600 font-semibold': isActive('/lost-items') }"
+        :class="{ 'text-blue-600 font-semibold': isActive('/ranking') }"
       >
-        Lost Items
+        Ranking
       </router-link>
+      
       <router-link 
-        to="/foundItems" 
+        to="/report" 
         class="hover:text-blue-600 transition"
-        :class="{ 'text-blue-600 font-semibold': isActive('/found-items') }"
+        :class="{ 'text-blue-600 font-semibold': isActive('/report') }"
       >
-        Found Items
+        Report
       </router-link>
+      
       <router-link 
         to="/profile" 
         class="hover:text-blue-600 transition"
@@ -37,6 +40,7 @@
       >
         Profile
       </router-link>
+      
       <button 
         class="bg-blue-600 text-white px-4 py-1.5 rounded hover:bg-blue-700 transition" 
         @click="handleLogout"
@@ -45,7 +49,7 @@
       </button>
     </nav>
 
-    <!-- Mobile Menu Button Header-->
+    <!-- Mobile Menu Button -->
     <button class="md:hidden" @click="toggleMenu">
       <svg
         class="w-7 h-7"
@@ -73,7 +77,7 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useToast } from "vue-toastification"
 
@@ -91,7 +95,7 @@ const toggleMenu = () => {
 }
 
 const isActive = (path) => {
-  return route.path === path
+  return route.path === path || route.path.startsWith(path + '/')
 }
 
 const handleLogout = () => {
@@ -100,6 +104,5 @@ const handleLogout = () => {
   router.push("/login")
 }
 
-// Expose isMobileMenuOpen to parent
 defineExpose({ isMobileMenuOpen })
 </script>
