@@ -6,10 +6,12 @@ import FoundItemsPage from '../pages/FoundItemsPage.vue'
 import ReportSelectionPage from '../pages/ReportSelectionPage.vue'
 import RankingPage from '../pages/RankingPage.vue'
 import ProfilePage from '../pages/ProfilePage.vue'
+import SignUpPage from '../pages/SignUpPage.vue'
 
 const routes: RouteRecordRaw[] = [
   { path: '/', redirect: '/login' },
   { path: '/login', name: 'Login', component: LoginPage },
+  { path: '/signup', name: 'SignUp', component: SignUpPage },
   { path: '/dashboard', name: 'Dashboard', component: DashboardPage },
   { path: '/report', name: 'ReportSelection', component: ReportSelectionPage},
   { path: '/report/found' ,name: 'ReportFound' ,component: FoundItemsPage },
