@@ -10,4 +10,6 @@ public interface LostClaimService {
     // admin actions
     LostClaim markApproved(Long claimId, Long adminId, String note);
     LostClaim markRejected(Long claimId, Long adminId, String note);
+    LostClaim confirmReturn(Long claimId, Long userId);
+    LostClaim submitProof(Long claimId, String studentIdNumber, String idImageUrl, String receiptUrl);
 }

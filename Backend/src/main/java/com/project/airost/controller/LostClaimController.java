@@ -75,6 +75,28 @@ public class LostClaimController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
+    @PostMapping("/{id}/upload-proof")
+    public ResponseEntity<LostClaim> uploadProof(
+            @PathVariable Long id,
+            @RequestParam("studentIdNumber") String studentIdNumber,
+            @RequestPart("idCardImage") MultipartFile idCardImage,
+            @RequestPart(value = "receiptImage", required = false) MultipartFile receiptImage
+    ) {
+        // 1. Save ID Card Image
+        String idCardUrl = fileStorageService.storeFile(idCardImage);
+
+        // 2. Save Receipt Image (if provided)
+        String receiptUrl = null;
+        if (receiptImage != null && !receiptImage.isEmpty()) {
+            receiptUrl = fileStorageService.storeFile(receiptImage);
+        }
+
+        // 3. Update Service
+        LostClaim updated = claimService.submitProof(id, studentIdNumber, idCardUrl, receiptUrl);
+
+        return ResponseEntity.ok(updated);
+    }
+
     // ==========================================
     // 👑 ADMIN ENDPOINTS
     // ==========================================

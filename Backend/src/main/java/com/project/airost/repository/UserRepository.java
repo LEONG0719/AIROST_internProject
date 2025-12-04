@@ -14,4 +14,5 @@ public interface UserRepository extends JpaRepository<User, Long> {
     List<User> findTop10ByOrderByPointsDesc();
     @Query("SELECT COALESCE(SUM(u.points), 0) FROM User u")
     Long sumTotalPoints();
+    Optional<User> findByStudentId(String studentId);
 }

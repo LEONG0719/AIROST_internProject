@@ -21,6 +21,9 @@ public class AuthServiceImpl implements AuthService {
         if (userRepo.findByEmail(user.getEmail()).isPresent()) {
             throw new RuntimeException("Email already exists!");
         }
+        if (userRepo.findByStudentId(user.getStudentId()).isPresent()){
+            throw new RuntimeException("Student ID already exists!");
+        }
 
         // 1. Generate Random Verification Code
         String randomCode = UUID.randomUUID().toString();
@@ -32,7 +35,7 @@ public class AuthServiceImpl implements AuthService {
 
         // 3. Send Email
         // Note: Change "http://localhost:8085" to your real frontend URL in production
-        emailService.sendVerificationEmail(savedUser, "http://localhost:8085");
+        emailService.sendVerificationEmail(savedUser, "http://localhost:8081");
 
         return savedUser;
     }
