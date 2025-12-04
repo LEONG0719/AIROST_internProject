@@ -16,7 +16,7 @@ import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/dashboard")
-@CrossOrigin(origins = "http://localhost:5177", allowedHeaders = "*", methods = {RequestMethod.GET})
+@CrossOrigin(origins = "http://localhost:5174", allowedHeaders = "*", methods = {RequestMethod.GET})
 @RequiredArgsConstructor
 public class DashboardController {
 
