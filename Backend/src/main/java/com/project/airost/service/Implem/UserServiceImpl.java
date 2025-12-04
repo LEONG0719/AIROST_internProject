@@ -2,6 +2,7 @@ package com.project.airost.service.Implem;
 
 import com.project.airost.domain.User;
 import com.project.airost.domain.LostClaim;
+import com.project.airost.dto.CommunityStatsResponse;
 import com.project.airost.dto.LeaderboardEntry;
 import com.project.airost.dto.UserProfileResponse;
 import com.project.airost.repository.FoundItemRepository;
@@ -78,5 +79,36 @@ public class UserServiceImpl implements UserService {
                     .build());
         }
         return leaderboard;
+    }
+
+    @Override
+    public CommunityStatsResponse getCommunityStats() {
+        // 1. Items Returned
+        long itemsReturned = foundItemRepo.countByClaimedTrue();
+
+        // 2. Active Heroes (Total Users)
+        long activeHeroes = userRepo.count();
+
+        // 3. Total Points
+        long totalPoints = userRepo.sumTotalPoints();
+
+        // 4. Success Rate Calculation
+        long totalItemsFound = foundItemRepo.count();
+        double successRate = 0.0;
+
+        if (totalItemsFound > 0) {
+            // Calculate percentage: (Claimed / Total) * 100
+            successRate = ((double) itemsReturned / totalItemsFound) * 100;
+
+            // Round to 1 decimal place (optional, for cleaner display)
+            successRate = Math.round(successRate * 10.0) / 10.0;
+        }
+
+        return CommunityStatsResponse.builder()
+                .itemsReturned(itemsReturned)
+                .activeHeroes(activeHeroes)
+                .successRate(successRate)
+                .totalPoints(totalPoints)
+                .build();
     }
 }

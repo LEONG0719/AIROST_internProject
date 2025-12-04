@@ -11,4 +11,5 @@ public interface LostClaimRepository extends JpaRepository<LostClaim, Long> {
 
     // Count successful matches (APPROVED claims)
     long countByUserIdAndStatus(Long userId, LostClaim.ClaimStatus status);
+
 }
