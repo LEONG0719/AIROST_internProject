@@ -19,4 +19,6 @@ public class UserProfileResponse {
     // Leaderboard info
     private long globalRank;
     private long totalUsers;
+
+    private String phoneNumber;
 }

@@ -51,7 +51,8 @@ public class FoundItemController {
             @RequestParam("color") String color,
             @RequestParam("brand") String brand,
             @RequestParam(value = "specialMarking", required = false) String specialMarking,
-            @RequestPart(value = "image", required = false) MultipartFile image
+            @RequestPart(value = "image", required = false) MultipartFile image,
+            @RequestParam(value = "location", required = false) String location
     ) {
 
         User user = userRepository.findById(userId)
@@ -68,6 +69,7 @@ public class FoundItemController {
         item.setSpecialMarking(specialMarking);
         item.setFoundAt(Instant.now());
         item.setClaimed(false);
+        item.setLocation(location);
 
         if (image != null && !image.isEmpty()) {
             String imageUrl = fileStorageService.storeFile(image);

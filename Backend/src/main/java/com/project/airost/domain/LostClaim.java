@@ -33,6 +33,7 @@ public class LostClaim {
     private String color;
     private String brand;
     private String remarks;
+    private String location;
 
     @Enumerated(EnumType.STRING)
     private ClaimStatus status = ClaimStatus.PENDING;

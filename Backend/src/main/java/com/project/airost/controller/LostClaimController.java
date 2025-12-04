@@ -4,6 +4,7 @@ import com.project.airost.domain.LostClaim;
 import com.project.airost.domain.User;
 import com.project.airost.dto.LostClaimRequest;
 import com.project.airost.repository.LostClaimRepository;
+import com.project.airost.repository.UserRepository;
 import com.project.airost.service.FileStorageService;
 import com.project.airost.service.LostClaimService;
 import lombok.RequiredArgsConstructor;
@@ -15,13 +16,13 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/claims")
-@RequiredArgsConstructor // ✅ Uses Lombok to generate constructor automatically
-// @CrossOrigin is not needed if you have Global SecurityConfig, but keeping it is fine.
+@RequiredArgsConstructor
 public class LostClaimController {
 
     private final LostClaimService claimService;
     private final FileStorageService fileStorageService;
-    private final LostClaimRepository claimRepository; // ✅ Added Repository
+    private final LostClaimRepository claimRepository;
+    private final UserRepository userRepository; // ✅ Needed to update phone number
 
     // 1. Submit Claim (For Users)
     @PostMapping(consumes = {"multipart/form-data"})
@@ -35,11 +36,19 @@ public class LostClaimController {
             request.setImageUrl(imageUrl);
         }
 
-        // 2. Map DTO -> Entity
+        // 2. Fetch User & Update Phone Number
+        // We fetch the user FIRST so we can update their phone number if they provided one
+        User user = userRepository.findById(request.getUserId())
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        if (request.getPhoneNumber() != null && !request.getPhoneNumber().isBlank()) {
+            user.setPhoneNumber(request.getPhoneNumber());
+            userRepository.save(user); // Save the new phone number
+        }
+
+        // 3. Map DTO -> Entity
         LostClaim claim = new LostClaim();
-        User user = new User();
-        user.setId(request.getUserId());
-        claim.setUser(user);
+        claim.setUser(user); // Set the fetched user object
 
         claim.setImageUrl(request.getImageUrl());
         claim.setDescription(request.getDescription());
@@ -49,7 +58,10 @@ public class LostClaimController {
         claim.setRemarks(request.getRemarks());
         claim.setSpecialMarking(request.getSpecialMarking());
 
-        // 3. Submit logic (AI)
+        // ✅ MAP LOCATION (This was missing/unreachable in your code)
+        claim.setLocation(request.getLocation());
+
+        // 4. Submit logic (AI)
         LostClaim saved = claimService.submitClaim(claim);
         return ResponseEntity.ok(saved);
     }
@@ -66,17 +78,15 @@ public class LostClaimController {
     // 👑 ADMIN ENDPOINTS
     // ==========================================
 
-    // 3. Get ALL Claims (For Admin Dashboard Table)
+    // 3. Get ALL Claims
     @GetMapping("/admin/all")
     public List<LostClaim> getAllClaimsForAdmin() {
-        // You can add sorting here if you want newest first
         return claimRepository.findAll();
     }
 
-    // 4. Get Only "Pending" Claims (For Admin Notifications/Tasks)
+    // 4. Get Only "Pending" Claims
     @GetMapping("/admin/pending")
     public List<LostClaim> getPendingClaims() {
-        // ✅ Fixed: Now actually queries DB for NEEDS_MANUAL_CHECK
         return claimRepository.findByStatus(LostClaim.ClaimStatus.NEEDS_MANUAL_CHECK);
     }
 
@@ -102,7 +112,7 @@ public class LostClaimController {
         return ResponseEntity.ok(updated);
     }
 
-    // 7. Delete Claim (Admin Feature)
+    // 7. Delete Claim
     @DeleteMapping("/admin/{id}")
     public ResponseEntity<?> deleteClaim(@PathVariable Long id) {
         if (!claimRepository.existsById(id)) {
