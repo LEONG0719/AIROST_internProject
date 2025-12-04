@@ -94,7 +94,7 @@
               <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <button 
                   @click="goToReportFound"
-                  class="group relative overflow-hidden bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl p-6 text-white text-left hover:shadow-xl transition"
+                  class="group relative overflow-hidden bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl p-6 text-white text-left cursor-pointer hover:shadow-xl transition"
                 >
                   <div class="absolute top-0 right-0 w-20 h-20 bg-white opacity-10 rounded-full -mr-10 -mt-10"></div>
                   <div class="relative z-10">
@@ -110,7 +110,7 @@
 
                 <button 
                   @click="goToReportLost"
-                  class="group relative overflow-hidden bg-gradient-to-br from-red-500 to-orange-600 rounded-xl p-6 text-white text-left hover:shadow-xl transition"
+                  class="group relative overflow-hidden bg-gradient-to-br from-red-500 to-orange-600 rounded-xl p-6 text-white text-left cursor-pointer hover:shadow-xl transition"
                 >
                   <div class="absolute top-0 right-0 w-20 h-20 bg-white opacity-10 rounded-full -mr-10 -mt-10"></div>
                   <div class="relative z-10">
@@ -179,7 +179,7 @@
               <p class="text-sm text-orange-100 mb-4">Out of {{ totalUsers }} heroes</p>
               <button 
                 @click="goToRanking"
-                class="w-full bg-white text-orange-600 py-2 rounded-xl font-semibold hover:bg-opacity-90 transition"
+                class="w-full bg-white text-orange-600 py-2 rounded-xl font-semibold cursor-pointer hover:bg-opacity-90 transition"
               >
                 View Leaderboard
               </button>
