@@ -8,6 +8,7 @@ import lombok.Data;
 public class UserProfileResponse {
     private Long id;
     private String fullName;
+    private String studentId;
     private String email;
     private Integer points;
 
