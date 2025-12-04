@@ -163,10 +163,11 @@
           </button>
 
         </form>
-          <!-- Top Right: Get Started -->
+          <!-- Get Started / Sign Up Link -->
         <div class="flex items-center text-sm mb-8 justify-center mt-8 md:mt-12">
           <span>Don't Have An Account?</span>
           <button
+            @click="goToSignUp"
             class="ml-3 border border-blue-600 text-blue-700 px-4 py-1 rounded-full hover:bg-blue-600 hover:text-white transition">
             GET STARTED
           </button>
@@ -243,6 +244,10 @@ const handleLogin = async () => {
     toast.error('Login failed. Please try again.') 
     isLoading.value = false
   }
+}
+
+const goToSignUp = () => {
+  router.push('/signup')
 }
 </script>
 
