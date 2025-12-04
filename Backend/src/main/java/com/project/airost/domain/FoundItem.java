@@ -7,6 +7,7 @@ import lombok.NoArgsConstructor;
 import lombok.RequiredArgsConstructor;
 
 import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Data
@@ -38,6 +39,7 @@ public class FoundItem {
     private String color;
     private String brand;
     private String location;
+    private LocalDateTime dropOffTime;
 
     @OneToMany(mappedBy = "foundItem", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<FoundItemImage> images;

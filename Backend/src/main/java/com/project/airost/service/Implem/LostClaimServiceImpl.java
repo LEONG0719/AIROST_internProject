@@ -6,7 +6,6 @@ import com.project.airost.service.AiService;
 import com.project.airost.service.LostClaimService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
 import java.util.List;
 import java.util.Optional;
 
@@ -19,15 +18,11 @@ public class LostClaimServiceImpl implements LostClaimService {
     private final AdminVerificationRepository adminVerificationRepo;
     private final AiService aiService;
 
-    // Points Constants
+    //  Reward Constants
     private static final int POINTS_MATCH = 25;
     private static final int POINTS_RETURN = 50;
 
-    public LostClaimServiceImpl(LostClaimRepository lostClaimRepo,
-                                FoundItemRepository foundItemRepo,
-                                UserRepository userRepo,
-                                AdminVerificationRepository adminVerificationRepo,
-                                AiService aiService) {
+    public LostClaimServiceImpl(LostClaimRepository lostClaimRepo, FoundItemRepository foundItemRepo, UserRepository userRepo, AdminVerificationRepository adminVerificationRepo, AiService aiService) {
         this.lostClaimRepo = lostClaimRepo;
         this.foundItemRepo = foundItemRepo;
         this.userRepo = userRepo;
@@ -38,296 +33,195 @@ public class LostClaimServiceImpl implements LostClaimService {
     @Override
     @Transactional
     public LostClaim submitClaim(LostClaim claim) {
-        // 1. Fetch Real User
-        if (claim.getUser() == null || claim.getUser().getId() == null) {
-            throw new IllegalArgumentException("User ID is required");
-        }
-        User realUser = userRepo.findById(claim.getUser().getId())
-                .orElseThrow(() -> new RuntimeException("User not found in database"));
+        // Validation
+        if (claim.getUser() == null || claim.getUser().getId() == null) throw new IllegalArgumentException("User ID required");
+        User realUser = userRepo.findById(claim.getUser().getId()).orElseThrow(() -> new RuntimeException("User not found"));
         claim.setUser(realUser);
+        claim.setStatus(LostClaim.ClaimStatus.PENDING);
 
-        // 2. Default Status
-        if (claim.getStatus() == null) {
-            claim.setStatus(LostClaim.ClaimStatus.PENDING);
-        }
-
-        // 3. Initial Save
         LostClaim saved = lostClaimRepo.save(claim);
 
         // ============================================================
         // 🔹 LAYER 1: AI IMAGE MATCHING
         // ============================================================
-        double bestImageScore = -1;
+        double bestImageScore = 0;
         FoundItem bestImageMatch = null;
 
-        // Only run Layer 1 if user uploaded an image
         if (saved.getImageUrl() != null && !saved.getImageUrl().isBlank()) {
             List<FoundItem> foundItems = foundItemRepo.findByClaimedFalse();
             for (FoundItem found : foundItems) {
-                // Check if found item has a main image or gallery images
-                String foundImgUrl = found.getImageUrl();
-
-                // If main image exists, compare it
-                if (foundImgUrl != null && !foundImgUrl.isBlank()) {
-                    double score = aiService.compareImages(saved.getImageUrl(), foundImgUrl);
-                    if (score > bestImageScore) {
-                        bestImageScore = score;
-                        bestImageMatch = found;
-                    }
+                double score = aiService.compareImages(saved.getImageUrl(), found.getImageUrl());
+                if (score > bestImageScore) {
+                    bestImageScore = score;
+                    bestImageMatch = found;
                 }
-
-                // Also check gallery images if any (optional based on your FoundItem structure)
-                if (found.getImages() != null) {
-                    for (FoundItemImage fi : found.getImages()) {
-                        double score = aiService.compareImages(saved.getImageUrl(), fi.getImageUrl());
-                        if (score > bestImageScore) {
-                            bestImageScore = score;
-                            bestImageMatch = found;
-                        }
-                    }
-                }
-
-                // Optimization: Stop if perfect match
-                if (bestImageScore >= 100) break;
+                if (bestImageScore >= 95) break; // Optimization
             }
         }
 
-        // --- LAYER 1 DECISION LOGIC ---
-        if (bestImageScore >= 70) {
-            // ✅ High Confidence: Auto Approve
-            saved.setStatus(LostClaim.ClaimStatus.APPROVED);
-            saved.setBestSimilarityScore(bestImageScore);
-            saved.setMatchedFoundItem(bestImageMatch);
-
-            // Reward Points (Match)
-            processMatchReward(bestImageMatch);
-
-            return lostClaimRepo.save(saved);
+        // --- LAYER 1 DECISION ---
+        if (bestImageScore >= 80) { // High confidence image = Auto Approve
+            return autoApprove(saved, bestImageMatch, bestImageScore);
         }
-        else if (bestImageScore >= 50) {
-            // ⚠️ Medium Confidence: Mark internally, but continue to Layer 2
-            saved.setStatus(LostClaim.ClaimStatus.LOW_CONFIDENCE);
-            saved.setBestSimilarityScore(bestImageScore);
-            saved.setMatchedFoundItem(bestImageMatch);
-        }
-        // If < 60, we simply continue to Layer 2 (Status remains PENDING or whatever it was)
 
         // ============================================================
-        // 🔹 LAYER 2: AI TEXT DESCRIPTION MATCHING
+        // 🔹 LAYER 2: AI TEXT MATCHING
         // ============================================================
-        double bestTextScore = -1;
+        double bestTextScore = 0;
         FoundItem bestTextMatch = null;
 
-        // Construct detailed text string for Lost Item
-        String concatLostText = joinNonNull(
-                saved.getCategory(),
-                saved.getBrand(),
-                saved.getColor(),
-                saved.getSpecialMarking(),
-                saved.getLocation(),
-                saved.getDescription()
-        );
+        // Build search strings
+        String lostText = joinNonNull(saved.getCategory(), saved.getBrand(), saved.getDescription());
 
-        if (concatLostText != null && !concatLostText.isBlank()) {
-            List<FoundItem> foundItems = foundItemRepo.findByClaimedFalse();
-            for (FoundItem found : foundItems) {
-                // Construct detailed text string for Found Item
-                String concatFoundText = joinNonNull(
-                        found.getCategory(),
-                        found.getBrand(),
-                        found.getColor(),
-                        found.getSpecialMarking(), // Include special marking in text compare
-                        found.getDescription(),
-                        found.getLocation()
-                );
-
-                double score = aiService.compareText(concatLostText, concatFoundText);
-                if (score > bestTextScore) {
-                    bestTextScore = score;
-                    bestTextMatch = found;
-                }
+        List<FoundItem> foundItems = foundItemRepo.findByClaimedFalse();
+        for (FoundItem found : foundItems) {
+            String foundText = joinNonNull(found.getCategory(), found.getBrand(), found.getDescription());
+            double score = aiService.compareText(lostText, foundText);
+            if (score > bestTextScore) {
+                bestTextScore = score;
+                bestTextMatch = found;
             }
         }
 
-        // --- LAYER 2 DECISION LOGIC ---
-        if (bestTextScore >= 70) {
-            // ✅ High Confidence Text: Auto Approve
-            saved.setStatus(LostClaim.ClaimStatus.APPROVED);
-            saved.setBestSimilarityScore(bestTextScore);
-            saved.setMatchedFoundItem(bestTextMatch);
-
-            // Reward Points (Match)
-            processMatchReward(bestTextMatch);
-
-            return lostClaimRepo.save(saved);
+        // --- LAYER 2 DECISION ---
+        if (bestTextScore >= 80) {
+            // High confidence text = Auto Approve
+            return autoApprove(saved, bestTextMatch, bestTextScore);
         }
-        else if (bestTextScore >= 50) {
-            // ⚠️ Medium Confidence Text: Needs Manual Check (Layer 3)
+        else if (bestTextScore >= 50 || bestImageScore >= 50) {
+            // ⚠️ Medium Confidence = Manual Check Required
+            // We prioritize the item with the higher score for the match
+            FoundItem bestMatch = (bestImageScore > bestTextScore) ? bestImageMatch : bestTextMatch;
+            double bestScore = Math.max(bestImageScore, bestTextScore);
+
             saved.setStatus(LostClaim.ClaimStatus.NEEDS_MANUAL_CHECK);
-            saved.setBestSimilarityScore(bestTextScore);
-            saved.setMatchedFoundItem(bestTextMatch);
-
+            saved.setMatchedFoundItem(bestMatch);
+            saved.setBestSimilarityScore(bestScore);
             return lostClaimRepo.save(saved);
         }
-        else {
-            // ❌ Low Confidence Text (< 60%)
 
-            // FALLBACK CHECK: Did Layer 1 have a "Low Confidence" match?
-            // If Image was 70% but Text is 40%, we shouldn't say "No Match".
-            // We should trust the image and ask Admin to verify.
-            if (saved.getStatus() == LostClaim.ClaimStatus.LOW_CONFIDENCE) {
-                saved.setStatus(LostClaim.ClaimStatus.NEEDS_MANUAL_CHECK);
-                // Keep the Image Match items/score as they were better
-                return lostClaimRepo.save(saved);
-            }
-
-            // If both Image AND Text failed
-            saved.setStatus(LostClaim.ClaimStatus.NO_MATCH);
-            saved.setBestSimilarityScore(Math.max(bestImageScore, bestTextScore)); // Record best attempt
-            return lostClaimRepo.save(saved);
-        }
+        // No Match Found
+        saved.setStatus(LostClaim.ClaimStatus.NO_MATCH);
+        return lostClaimRepo.save(saved);
     }
 
-    @Override
-    @Transactional
-    public LostClaim submitProof(Long claimId, String studentIdNumber, String idImageUrl, String receiptUrl) {
-        LostClaim claim = lostClaimRepo.findById(claimId)
-                .orElseThrow(() -> new RuntimeException("Claim not found"));
+    // --- Helper: Auto Approve Logic ---
+    private LostClaim autoApprove(LostClaim claim, FoundItem match, double score) {
+        claim.setStatus(LostClaim.ClaimStatus.APPROVED);
+        claim.setMatchedFoundItem(match);
+        claim.setBestSimilarityScore(score);
 
-        // Update the proof fields
-        claim.setProofStudentIdNumber(studentIdNumber);
-        claim.setProofStudentIdImage(idImageUrl);
-        claim.setProofReceiptImage(receiptUrl); // Optional, can be null
+        // 🎁 REWARD STAGE 1: Match Found (+25 pts)
+        giveReward(match.getUser(), POINTS_MATCH);
 
-        // We don't change status here, Admin still needs to review
         return lostClaimRepo.save(claim);
     }
 
-    // ==========================================
-    // 🔹 LAYER 3: ADMIN VERIFICATION (Called by Controller)
-    // ==========================================
+    // ============================================================
+    // 🔹 LAYER 3: MANUAL VERIFICATION (User Uploads Proof)
+    // ============================================================
+    @Override
+    @Transactional
+    public LostClaim submitProof(Long claimId, String studentIdNumber, String idImageUrl, String receiptUrl) {
+        LostClaim claim = lostClaimRepo.findById(claimId).orElseThrow(() -> new RuntimeException("Claim not found"));
+
+        if (claim.getStatus() != LostClaim.ClaimStatus.NEEDS_MANUAL_CHECK &&
+                claim.getStatus() != LostClaim.ClaimStatus.REJECTED) { // Allow retry if rejected? Optional.
+            throw new RuntimeException("This claim does not require manual verification.");
+        }
+
+        claim.setProofStudentIdNumber(studentIdNumber);
+        claim.setProofStudentIdImage(idImageUrl);
+        claim.setProofReceiptImage(receiptUrl);
+        claim.setStatus(LostClaim.ClaimStatus.NEEDS_MANUAL_CHECK);
+
+        return lostClaimRepo.save(claim);
+    }
+
+    // ============================================================
+    // 🔹 ADMIN APPROVAL (Gatekeeper)
+    // ============================================================
     @Override
     @Transactional
     public LostClaim markApproved(Long claimId, Long adminId, String note) {
-        LostClaim claim = lostClaimRepo.findById(claimId)
-                .orElseThrow(() -> new RuntimeException("Claim not found"));
+        LostClaim claim = lostClaimRepo.findById(claimId).orElseThrow(() -> new RuntimeException("Claim not found"));
 
-        // 🚨 ENFORCE PROOF REQUIREMENTS 🚨
-        // Admin cannot approve if user hasn't uploaded the mandatory proofs yet.
-        if (claim.getProofStudentIdNumber() == null || claim.getProofStudentIdNumber().isBlank()) {
-            throw new RuntimeException("Cannot approve: Student ID Number is missing.");
+        // 🛡Enforce Proof Requirements
+        if (claim.getProofStudentIdNumber() == null || claim.getProofStudentIdImage() == null) {
+            throw new RuntimeException("Cannot approve: Missing Student ID proofs.");
         }
-        if (claim.getProofStudentIdImage() == null || claim.getProofStudentIdImage().isBlank()) {
-            throw new RuntimeException("Cannot approve: Student ID Image is missing.");
-        }
-        // Note: Receipt is optional, so we don't throw exception if it's missing.
 
-        // --- If checks pass, proceed to Approve ---
         claim.setStatus(LostClaim.ClaimStatus.APPROVED);
 
-        // ✅ REWARD: If Admin approves, give Match points
+        //  REWARD STAGE 1 (Delayed): Match Approved (+25 pts)
+        // We check if points were already given to prevent double counting
+        // (In this flow, they hit MANUAL_CHECK first, so they haven't received points yet)
         if (claim.getMatchedFoundItem() != null) {
-            processMatchReward(claim.getMatchedFoundItem());
+            giveReward(claim.getMatchedFoundItem().getUser(), POINTS_MATCH);
         }
 
-        lostClaimRepo.save(claim);
-
-        // Record the Admin's action
-        AdminVerification av = new AdminVerification();
-        av.setClaim(claim);
-        av.setAdmin(userRepo.findById(adminId).orElse(null));
-        av.setResult(AdminVerification.VerificationResult.APPROVED);
-        av.setNotes(note);
-        adminVerificationRepo.save(av);
-
-        return claim;
+        saveAdminLog(claim, adminId, AdminVerification.VerificationResult.APPROVED, note);
+        return lostClaimRepo.save(claim);
     }
 
     @Override
     @Transactional
     public LostClaim markRejected(Long claimId, Long adminId, String note) {
-        LostClaim claim = lostClaimRepo.findById(claimId)
-                .orElseThrow(() -> new RuntimeException("Claim not found"));
-
+        LostClaim claim = lostClaimRepo.findById(claimId).orElseThrow();
         claim.setStatus(LostClaim.ClaimStatus.REJECTED);
-        lostClaimRepo.save(claim);
-
-        AdminVerification av = new AdminVerification();
-        av.setClaim(claim);
-        av.setAdmin(userRepo.findById(adminId).orElse(null));
-        av.setResult(AdminVerification.VerificationResult.REJECTED);
-        av.setNotes(note);
-        adminVerificationRepo.save(av);
-
-        return claim;
+        saveAdminLog(claim, adminId, AdminVerification.VerificationResult.REJECTED, note);
+        return lostClaimRepo.save(claim);
     }
 
-    // ==========================================
-    // 🔹 CONFIRM RETURN (Owner got item back)
-    // ==========================================
+    // ============================================================
+    // 🔹 FULFILLMENT: CONFIRM RETURN
+    // ============================================================
     @Override
     @Transactional
     public LostClaim confirmReturn(Long claimId, Long userId) {
-        LostClaim claim = lostClaimRepo.findById(claimId)
-                .orElseThrow(() -> new RuntimeException("Claim not found"));
+        LostClaim claim = lostClaimRepo.findById(claimId).orElseThrow(() -> new RuntimeException("Claim not found"));
 
-        if (!claim.getUser().getId().equals(userId)) {
-            throw new RuntimeException("You are not the owner");
+        if (!claim.getUser().getId().equals(userId)) throw new RuntimeException("Not authorized");
+        if (claim.getStatus() != LostClaim.ClaimStatus.APPROVED) throw new RuntimeException("Claim not approved");
+
+        // Mark item as claimed
+        FoundItem item = claim.getMatchedFoundItem();
+        if (item != null && !item.isClaimed()) {
+            item.setClaimed(true);
+            foundItemRepo.save(item);
+
+            // 🎁 REWARD STAGE 2: Item Returned (+50 pts)
+            giveReward(item.getUser(), POINTS_RETURN);
         }
 
-        if (claim.getStatus() != LostClaim.ClaimStatus.APPROVED) {
-            throw new RuntimeException("Claim not approved yet");
-        }
-
-        // ✅ REWARD: Give Return points (+50)
-        FoundItem matchedItem = claim.getMatchedFoundItem();
-        if (matchedItem != null && !matchedItem.isClaimed()) {
-
-            // Mark item as officially gone from database list
-            matchedItem.setClaimed(true);
-            foundItemRepo.save(matchedItem);
-
-            User finder = matchedItem.getUser();
-            if (finder != null) {
-                int currentPoints = finder.getPoints() == null ? 0 : finder.getPoints();
-                finder.setPoints(currentPoints + POINTS_RETURN);
-                userRepo.save(finder);
-                System.out.println("🎉 Reward: Added " + POINTS_RETURN + " points to Finder (Return Confirmed)");
-            }
-        }
-        return claim;
+        claim.setStatus(LostClaim.ClaimStatus.CLAIMED);
+        return lostClaimRepo.save(claim);
     }
 
-    // --- HELPERS ---
+    // --- UTILITIES ---
 
-    private void processMatchReward(FoundItem matchedItem) {
-        // Awards points for a successful MATCH (+25)
-        // Does NOT mark as claimed yet (User must confirm receipt for that)
-        if (matchedItem != null) {
-            User finder = matchedItem.getUser();
-            if (finder != null) {
-                // Optional: Check if we already gave match points to prevent duplicates
-                // For now, simpler logic: just add.
-                int currentPoints = finder.getPoints() == null ? 0 : finder.getPoints();
-                finder.setPoints(currentPoints + POINTS_MATCH);
-                userRepo.save(finder);
-                System.out.println("🎉 Reward: Added " + POINTS_MATCH + " points to Finder (Match Approved)");
-            }
+    private void giveReward(User user, int points) {
+        if (user != null) {
+            user.setPoints(user.getPoints() + points);
+            userRepo.save(user);
         }
+    }
+
+    private void saveAdminLog(LostClaim claim, Long adminId, AdminVerification.VerificationResult result, String note) {
+        AdminVerification av = new AdminVerification();
+        av.setClaim(claim);
+        av.setAdmin(userRepo.findById(adminId).orElse(null));
+        av.setResult(result);
+        av.setNotes(note);
+        adminVerificationRepo.save(av);
     }
 
     private String joinNonNull(String... parts) {
         StringBuilder sb = new StringBuilder();
-        for (String part : parts) {
-            if (part != null && !part.isBlank()) {
-                sb.append(part).append(" ");
-            }
-        }
+        for (String part : parts) if (part != null) sb.append(part).append(" ");
         return sb.toString().trim();
     }
 
     @Override
-    public Optional<LostClaim> findById(Long id) {
-        return lostClaimRepo.findById(id);
-    }
+    public Optional<LostClaim> findById(Long id) { return lostClaimRepo.findById(id); }
 }

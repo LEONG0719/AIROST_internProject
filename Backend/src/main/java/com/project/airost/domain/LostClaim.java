@@ -61,6 +61,6 @@ public class LostClaim {
     // getters/setters
 
     public enum ClaimStatus {
-        PENDING, LOW_CONFIDENCE, NEEDS_MANUAL_CHECK, NO_MATCH, APPROVED, REJECTED
+        PENDING, LOW_CONFIDENCE, NEEDS_MANUAL_CHECK, NO_MATCH, APPROVED, REJECTED, CLAIMED
     }
 }
