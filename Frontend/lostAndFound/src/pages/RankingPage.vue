@@ -130,11 +130,11 @@
 
               <div class="p-4 max-h-[600px] overflow-y-auto">
                 <div 
-                  v-for="(user, index) in allRankings" 
-                  :key="index"
-                  class="flex items-center gap-3 p-3 rounded-xl hover:bg-gray-50 transition cursor-pointer mb-2"
-                  :class="{ 'bg-blue-50': user.isCurrentUser }"
-                >
+                    v-for="(user, index) in rankingsWithStyle" 
+                    :key="index"
+                    class="flex items-center gap-3 p-3 rounded-xl hover:bg-gray-50 transition cursor-pointer mb-2"
+                    :class="{ 'bg-blue-50': user.isCurrentUser }"
+                    >
                   <!-- Rank -->
                   <div class="flex-shrink-0 w-8 text-center">
                     <span class="font-bold text-gray-900">#{{ user.rank }}</span>
@@ -216,83 +216,206 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, onMounted, computed } from 'vue'
+import { useRouter } from 'vue-router'
+import { useToast } from 'vue-toastification'
 import DashboardLayout from '../layouts/DashboardLayout.vue'
+import RankingService from '../services/ranking.service'
+import AuthService from '../services/auth.service'
+import type { RankingEntry } from '../types/api.types'
 
-const totalReturned = ref(89)
-const totalUsers = ref(234)
+const router = useRouter()
+const toast = useToast()
+
+// User info
+const currentUserId = ref<number | null>(null)
+
+// Stats
+const totalReturned = ref(0)
+const totalUsers = ref(0)
 const successRate = ref(95)
-const totalPoints = ref(1847)
+const totalPoints = ref(0)
 
-const topThree = [
-  {
-    rank: 1,
-    name: 'Ahmad Faris',
-    studentId: 'A20EC0123',
-    points: 245,
-    itemsFound: 15,
-    gradient: 'from-yellow-400 to-orange-500',
-    badgeColor: 'bg-yellow-400 text-yellow-900',
-    avatarText: 'text-yellow-600'
-  },
-  {
-    rank: 2,
-    name: 'Sarah Chen',
-    studentId: 'A20EC0234',
-    points: 185,
-    itemsFound: 12,
-    gradient: 'from-gray-300 to-gray-400',
-    badgeColor: 'bg-gray-300 text-gray-900',
-    avatarText: 'text-gray-600'
-  },
-  {
-    rank: 3,
-    name: 'Lisa Wong',
-    studentId: 'A20EC0456',
-    points: 142,
-    itemsFound: 9,
-    gradient: 'from-orange-400 to-red-500',
-    badgeColor: 'bg-orange-400 text-orange-900',
-    avatarText: 'text-orange-600'
+// Rankings data
+const allRankings = ref<RankingEntry[]>([])
+const isLoading = ref(false)
+
+// Avatar gradient colors for variety
+const gradientColors = [
+  'from-yellow-400 to-orange-500',
+  'from-blue-400 to-blue-600',
+  'from-purple-400 to-purple-600',
+  'from-green-400 to-green-600',
+  'from-pink-400 to-pink-600',
+  'from-indigo-400 to-indigo-600',
+  'from-red-400 to-red-600',
+  'from-teal-400 to-teal-600',
+  'from-cyan-400 to-cyan-600',
+  'from-orange-400 to-orange-600',
+  'from-lime-400 to-lime-600',
+  'from-emerald-400 to-emerald-600',
+  'from-violet-400 to-violet-600',
+  'from-fuchsia-400 to-fuchsia-600',
+]
+
+// Get gradient color for a user (consistent based on index)
+const getGradient = (index: number): string => {
+  return gradientColors[index % gradientColors.length] || 'from-blue-400 to-blue-600'
+}
+
+// Top 3 with special styling
+const topThree = computed(() => {
+  const top3 = allRankings.value.slice(0, 3)
+  return top3.map((entry, index) => {
+    let gradient = ''
+    let badgeColor = ''
+    let avatarText = ''
+    
+    if (entry.rank === 1) {
+      gradient = 'from-yellow-400 to-orange-500'
+      badgeColor = 'bg-yellow-400 text-yellow-900'
+      avatarText = 'text-yellow-600'
+    } else if (entry.rank === 2) {
+      gradient = 'from-gray-300 to-gray-400'
+      badgeColor = 'bg-gray-300 text-gray-900'
+      avatarText = 'text-gray-600'
+    } else if (entry.rank === 3) {
+      gradient = 'from-orange-400 to-red-500'
+      badgeColor = 'bg-orange-400 text-orange-900'
+      avatarText = 'text-orange-600'
+    }
+    
+    return {
+      rank: entry.rank,
+      name: entry.fullName,
+      studentId: `User ${entry.userId}`, // You can format this better if you have student ID
+      points: entry.points,
+      itemsFound: entry.itemsFound,
+      gradient,
+      badgeColor,
+      avatarText
+    }
+  })
+})
+
+// All rankings with avatar gradients and current user highlight
+const rankingsWithStyle = computed(() => {
+  return allRankings.value.map((entry, index) => {
+    return {
+      rank: entry.rank,
+      name: entry.fullName,
+      points: entry.points,
+      avatarGradient: entry.userId === currentUserId.value 
+        ? 'from-blue-500 to-blue-700'  // Special color for current user
+        : getGradient(index),
+      isCurrentUser: entry.userId === currentUserId.value
+    }
+  })
+})
+
+// Load leaderboard data
+const loadLeaderboard = async () => {
+  console.log('=== LOADING LEADERBOARD ===')
+  isLoading.value = true
+  
+  try {
+    // Get current user ID
+    currentUserId.value = AuthService.getUserId()
+    console.log('Current user ID:', currentUserId.value)
+    
+    // Fetch leaderboard from backend
+    console.log('Fetching leaderboard from /api/user/leaderboard...')
+    const rankings = await RankingService.getLeaderboard()
+    console.log('Leaderboard received:', rankings)
+    console.log('Number of users:', rankings.length)
+    console.log('First user:', rankings[0])
+    
+    allRankings.value = rankings
+    
+    // Calculate stats from leaderboard
+    totalUsers.value = rankings.length
+    totalPoints.value = rankings.reduce((sum, entry) => sum + entry.points, 0)
+    totalReturned.value = rankings.reduce((sum, entry) => sum + entry.itemsReturned, 0)
+    
+    console.log('Stats calculated:', {
+      totalUsers: totalUsers.value,
+      totalPoints: totalPoints.value,
+      totalReturned: totalReturned.value
+    })
+    
+    console.log('allRankings set to:', allRankings.value)
+    console.log('rankingsWithStyle computed:', rankingsWithStyle.value)
+    
+    // If no rankings, show message
+    if (rankings.length === 0) {
+      console.warn('No rankings data received!')
+      toast.info('No rankings yet. Be the first to help!')
+    }
+    
+  } catch (error: any) {
+    console.error('=== ERROR LOADING LEADERBOARD ===')
+    console.error('Error:', error)
+    console.error('Error message:', error.message)
+    console.error('Error response:', error.response)
+    
+    toast.error('Failed to load leaderboard')
+    
+    // Show empty state
+    allRankings.value = []
+  } finally {
+    isLoading.value = false
+    console.log('=== LOADING COMPLETE ===')
   }
-]
+}
 
-const allRankings = [
-  { rank: 1, name: 'Ahmad Faris', points: 245, avatarGradient: 'from-yellow-400 to-orange-500', isCurrentUser: false },
-  { rank: 2, name: 'Sarah Chen', points: 185, avatarGradient: 'from-blue-400 to-blue-600', isCurrentUser: false },
-  { rank: 3, name: 'Lisa Wong', points: 142, avatarGradient: 'from-purple-400 to-purple-600', isCurrentUser: false },
-  { rank: 4, name: 'David Kumar', points: 135, avatarGradient: 'from-green-400 to-green-600', isCurrentUser: false },
-  { rank: 5, name: 'Emily Tan', points: 120, avatarGradient: 'from-pink-400 to-pink-600', isCurrentUser: false },
-  { rank: 6, name: 'Michael Lee', points: 105, avatarGradient: 'from-indigo-400 to-indigo-600', isCurrentUser: false },
-  { rank: 7, name: 'Fatimah Ali', points: 90, avatarGradient: 'from-red-400 to-red-600', isCurrentUser: false },
-  { rank: 8, name: 'John Smith', points: 75, avatarGradient: 'from-teal-400 to-teal-600', isCurrentUser: false },
-  { rank: 9, name: 'Nurul Huda', points: 60, avatarGradient: 'from-cyan-400 to-cyan-600', isCurrentUser: false },
-  { rank: 10, name: 'Alex Wong', points: 45, avatarGradient: 'from-orange-400 to-orange-600', isCurrentUser: false },
-  { rank: 11, name: 'Siti Aminah', points: 40, avatarGradient: 'from-lime-400 to-lime-600', isCurrentUser: false },
-  { rank: 12, name: 'James Lim', points: 35, avatarGradient: 'from-emerald-400 to-emerald-600', isCurrentUser: false },
-  { rank: 13, name: 'Rachel Ng', points: 30, avatarGradient: 'from-violet-400 to-violet-600', isCurrentUser: false },
-  { rank: 14, name: 'Hassan Ibrahim', points: 28, avatarGradient: 'from-fuchsia-400 to-fuchsia-600', isCurrentUser: false },
-  { rank: 15, name: 'You', points: 25, avatarGradient: 'from-blue-500 to-blue-700', isCurrentUser: true }
-]
+// Load community stats
+const loadCommunityStats = async () => {
+  try {
+    console.log('Fetching community stats from /api/user/community-stats...')
+    const response = await fetch('http://localhost:8080/api/user/community-stats')
+    const data = await response.json()
+    console.log('Community stats received:', data)
+    
+    // Update stats with real data
+    totalReturned.value = data.totalItemsReturned || 0
+    totalUsers.value = data.totalUsers || 0
+    successRate.value = data.successRate || 0
+    totalPoints.value = data.totalPoints || 0
+    
+    console.log('Community stats updated:', {
+      totalReturned: totalReturned.value,
+      totalUsers: totalUsers.value,
+      successRate: successRate.value,
+      totalPoints: totalPoints.value
+    })
+  } catch (error: any) {
+    console.error('Error loading community stats:', error)
+    // Keep default values if error
+  }
+}
+
+// Get initials from name for avatar
+const getInitials = (name: string): string => {
+  const parts = name.split(' ')
+  if (parts.length >= 2 && parts[0] && parts[1]) {
+    return (parts[0][0] + parts[1][0]).toUpperCase()
+  }
+  return name.substring(0, 2).toUpperCase()
+}
+
+// Load data on mount
+onMounted(async () => {
+  // Check if user is logged in
+  if (!AuthService.isAuthenticated()) {
+    toast.error('Please login first')
+    router.push('/login')
+    return
+  }
+  
+  // Load both leaderboard and community stats
+  await Promise.all([
+    loadLeaderboard(),
+    loadCommunityStats()
+  ])
+})
 </script>
-
-<style scoped>
-/* Custom scrollbar for leaderboard */
-.overflow-y-auto::-webkit-scrollbar {
-  width: 6px;
-}
-
-.overflow-y-auto::-webkit-scrollbar-track {
-  background: #f1f1f1;
-  border-radius: 10px;
-}
-
-.overflow-y-auto::-webkit-scrollbar-thumb {
-  background: #cbd5e0;
-  border-radius: 10px;
-}
-
-.overflow-y-auto::-webkit-scrollbar-thumb:hover {
-  background: #a0aec0;
-}
-</style>
