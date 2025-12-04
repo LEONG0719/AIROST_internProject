@@ -57,7 +57,7 @@ export interface FoundItem {
 }
 
 export interface FoundItemRequest {
-  userId: number
+  userId?: number  // Optional - will be added by service from AuthService
   title: string
   description: string
   category: string
@@ -87,7 +87,7 @@ export interface LostClaim {
 }
 
 export interface LostClaimRequest {
-  userId: number
+  userId?: number  // Optional - will be added by service from AuthService
   description: string
   category: string
   color: string
