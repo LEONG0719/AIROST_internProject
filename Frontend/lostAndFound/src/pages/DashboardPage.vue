@@ -239,6 +239,7 @@ import { useRouter } from 'vue-router'
 import { useToast } from 'vue-toastification'
 import AuthService from '../services/auth.service'
 import DashboardService from '../services/dashboard.service'
+import DashboardLayout from '../layouts/DashboardLayout.vue'
 import type { ActivityFeed, DashboardStats } from '../types/api.types'
 
 const router = useRouter()
