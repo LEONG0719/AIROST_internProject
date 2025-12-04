@@ -33,6 +33,9 @@ public class User {
 
     private Instant createdAt = Instant.now();
 
+    @Column(nullable = false)
+    private Integer points = 0;
+
     //for verification
     @Column(name = "is_enabled")
     private boolean enabled = false; // Default is FALSE (cannot login)
