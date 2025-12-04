@@ -231,31 +231,20 @@
 
 <script setup lang="ts">
 import { ref } from 'vue'
-import { useToast } from "vue-toastification"  
+import { useRouter } from 'vue-router'
+import { useToast } from 'vue-toastification'
 import DashboardLayout from '../layouts/DashboardLayout.vue'
-import InstructionCard from '../components/ui/InstructionCard.vue'
 import ImageUpload from '../components/form/ImageUpload.vue'
-import AIMatchingInfo from '../components/ui/AIMatchingInfo.vue'
 import LocationSelect from '../components/form/LocationSelect.vue'
+import InstructionCard from '../components/ui/InstructionCard.vue'
+import FoundItemService from '../services/founditem.service'
+import AuthService from '../services/auth.service'
+import type { FoundItemRequest } from '../types/api.types'
 
-const toast = useToast()  
+const router = useRouter()
+const toast = useToast()
 
-interface FormData {
-  itemName: string
-  category: string
-  otherCategory: string
-  brand: string
-  color: string
-  marking: string
-  description: string
-  location: string
-  otherLocation: string
-  itemCurrentLocation: string
-  itemStorageLocation: string
-  image: File | null
-}
-
-const form = ref<FormData>({
+const form = ref({
   itemName: '',
   category: '',
   otherCategory: '',
@@ -267,7 +256,7 @@ const form = ref<FormData>({
   otherLocation: '',
   itemCurrentLocation: '',
   itemStorageLocation: '',
-  image: null
+  image: null as File | null
 })
 
 const imagePreview = ref<string | null>(null)
@@ -275,67 +264,143 @@ const isSubmitting = ref(false)
 const locationKey = ref(0)
 const imageKey = ref(0)
 
+const handleImageSelected = (file: File | null) => {
+  form.value.image = file
+  
+  if (file) {
+    const reader = new FileReader()
+    reader.onload = (e) => {
+      imagePreview.value = e.target?.result as string
+    }
+    reader.readAsDataURL(file)
+  } else {
+    imagePreview.value = null
+  }
+}
+
 const handlePreviewUpdate = (preview: string | null) => {
   imagePreview.value = preview
 }
 
+const handleLocationSelected = (location: string) => {
+  form.value.location = location
+}
+
+const validateForm = (): boolean => {
+  // Check required fields
+  if (!form.value.itemName.trim()) {
+    toast.error('Please enter the item name')
+    return false
+  }
+
+  if (!form.value.category) {
+    toast.error('Please select a category')
+    return false
+  }
+
+  if (form.value.category === 'Others' && !form.value.otherCategory.trim()) {
+    toast.error('Please specify the category')
+    return false
+  }
+
+  if (!form.value.color.trim()) {
+    toast.error('Please enter the color')
+    return false
+  }
+
+  if (!form.value.description.trim()) {
+    toast.error('Please enter a description')
+    return false
+  }
+
+  if (!form.value.location) {
+    toast.error('Please select where you found the item')
+    return false
+  }
+
+  if (form.value.location === 'Others' && !form.value.otherLocation.trim()) {
+    toast.error('Please specify the location')
+    return false
+  }
+
+  if (!form.value.itemCurrentLocation.trim()) {
+    toast.error('Please specify the current location of the item')
+    return false
+  }
+
+  return true
+}
+
 const handleSubmit = async () => {
-  // Validation with toast
-  if (!form.value.image) {
-    toast.warning('Please upload an image of the found item')  
+  // Check if user is logged in
+  if (!AuthService.isAuthenticated()) {
+    toast.error('Please login first')
+    router.push('/login')
     return
   }
 
-  if (form.value.category === 'Others' && !form.value.otherCategory) {
-    toast.warning('Please specify the category')  
-    return
-  }
-
-  if (form.value.location === 'Other' && !form.value.otherLocation) {
-    toast.warning('Please specify the location')  
-    return
-  }
-
-  if (form.value.itemCurrentLocation === 'other_place' && !form.value.itemStorageLocation) {
-    toast.warning('Please specify where the item is currently kept')  
+  // Validate form
+  if (!validateForm()) {
     return
   }
 
   isSubmitting.value = true
 
   try {
-    const formData = new FormData()
-    formData.append('itemName', form.value.itemName)
-    
-    const finalCategory = form.value.category === 'Others' ? form.value.otherCategory : form.value.category
-    formData.append('category', finalCategory)
-    
-    formData.append('brand', form.value.brand)
-    formData.append('color', form.value.color)
-    formData.append('marking', form.value.marking)
-    formData.append('description', form.value.description)
-    
-    const finalLocation = form.value.location === 'Other' ? form.value.otherLocation : form.value.location
-    formData.append('location', finalLocation)
-    
-    formData.append('itemCurrentLocation', form.value.itemCurrentLocation)
-    
-    if (form.value.itemCurrentLocation === 'other_place') {
-      formData.append('itemStorageLocation', form.value.itemStorageLocation)
-    }
-    
-    if (form.value.image) {
-      formData.append('image', form.value.image)
+    // Prepare data for API
+    const finalCategory = form.value.category === 'Others' 
+      ? form.value.otherCategory 
+      : form.value.category
+
+    const finalLocation = form.value.location === 'Others'
+      ? form.value.otherLocation
+      : form.value.location
+
+    // Build description with all details
+    const fullDescription = `
+${form.value.description}
+
+Found at: ${finalLocation}
+Current Location: ${form.value.itemCurrentLocation}
+${form.value.itemStorageLocation ? `Storage Location: ${form.value.itemStorageLocation}` : ''}
+    `.trim()
+
+    const requestData: FoundItemRequest = {
+      title: form.value.itemName,
+      description: fullDescription,
+      category: finalCategory,
+      color: form.value.color,
+      brand: form.value.brand || 'Unknown',
+      specialMarking: form.value.marking || undefined
     }
 
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 2000))
+    // Submit to backend with image
+    const result = await FoundItemService.reportFoundItem(
+      requestData,
+      form.value.image || undefined
+    )
 
-    toast.success('Found item reported successfully! Our AI will check for matches.')  
+    console.log('Item reported successfully:', result)
+    
+    toast.success('Found item reported successfully! Our AI will check for matches.')
+    
+    // Reset form
     resetForm()
-  } catch (error) {
+    
+    // Redirect to dashboard after 2 seconds
+    setTimeout(() => {
+      router.push('/dashboard')
+    }, 2000)
+    
+  } catch (error: any) {
     console.error('Error submitting form:', error)
-    toast.error('Failed to submit report. Please try again.')  
+    
+    // Show specific error message if available
+    if (error.message) {
+      toast.error(error.message)
+    } else {
+      toast.error('Failed to submit report. Please try again.')
+    }
   } finally {
     isSubmitting.value = false
   }
@@ -361,39 +426,3 @@ const resetForm = () => {
   imageKey.value++
 }
 </script>
-
-<style scoped>
-/* Custom scrollbar */
-textarea::-webkit-scrollbar {
-  width: 8px;
-}
-
-textarea::-webkit-scrollbar-track {
-  background: #f1f1f1;
-  border-radius: 4px;
-}
-
-textarea::-webkit-scrollbar-thumb {
-  background: #888;
-  border-radius: 4px;
-}
-
-textarea::-webkit-scrollbar-thumb:hover {
-  background: #555;
-}
-
-/* Expand animation */
-.expand-enter-active,
-.expand-leave-active {
-  transition: all 0.3s ease;
-  max-height: 100px;
-  overflow: hidden;
-}
-
-.expand-enter-from,
-.expand-leave-to {
-  opacity: 0;
-  max-height: 0;
-  margin-top: 0;
-}
-</style>

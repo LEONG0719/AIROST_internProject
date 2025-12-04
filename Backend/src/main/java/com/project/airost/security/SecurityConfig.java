@@ -28,7 +28,7 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
                         // 1. Allow Register/Login/Verify
-                        .requestMatchers("/api/auth/**").permitAll()
+                        .requestMatchers("/api/auth/").permitAll()
 
                         // ============================================================
                         // 2. FOUND ITEMS VISIBILITY RULES
