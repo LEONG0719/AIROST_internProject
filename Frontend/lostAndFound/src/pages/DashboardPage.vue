@@ -240,18 +240,18 @@ import { useToast } from 'vue-toastification'
 import AuthService from '../services/auth.service'
 import DashboardService from '../services/dashboard.service'
 import DashboardLayout from '../layouts/DashboardLayout.vue'
-import type { ActivityFeed, DashboardStats } from '../types/api.types'
+import type { ActivityFeed, DashboardStats, CommunityStats } from '../types/api.types'
 
 const router = useRouter()
 const toast = useToast()
 
-// User info from localStorage
+// User info
 const userId = ref<number | null>(null)
-const userName = ref('User')
-const userRank = ref(15)
-const totalUsers = ref(234)
+const userName = ref('Student')
+const userRank = ref(0)
+const totalUsers = ref(234)  // Total users for ranking display
 
-// Dashboard stats
+// Personal stats (from user profile)
 const stats = ref<DashboardStats>({
   itemsFound: 0,
   itemsLost: 0,
@@ -259,42 +259,63 @@ const stats = ref<DashboardStats>({
   points: 0
 })
 
+// Community stats (from /api/user/community-stats)
+const communityStats = ref<CommunityStats>({
+  totalItemsReturned: 0,
+  totalUsers: 0,
+  successRate: 0,
+  totalPoints: 0
+})
+
+// AI Stats (can be added later if backend provides)
 const aiStats = ref({
   scanned: 0,
   matches: 0,
-  successRate: 0
+  successRate: 95
 })
 
 // Recent activities from API
 const recentActivities = ref<any[]>([])
 const isLoadingActivities = ref(false)
 const isLoadingStats = ref(false)
+const isLoadingProfile = ref(false)
 
-// Fetch user info from localStorage
-const loadUserInfo = () => {
-  userId.value = AuthService.getUserId()
-  
-  // For now, use a default name
-  // You can fetch full user details from backend later
-  userName.value = 'Student'
-  
-  if (!userId.value) {
-    toast.error('Please login first')
-    router.push('/login')
+// Fetch user profile to get real name
+const loadUserProfile = async () => {
+  isLoadingProfile.value = true
+  try {
+    const profile = await DashboardService.getUserProfile()
+    userName.value = profile.fullName || 'Student'
+    
+    // Also update personal stats from profile
+    stats.value = {
+      itemsFound: profile.itemsFound || 0,
+      itemsLost: profile.itemsLost || 0,
+      matched: profile.itemsMatched || 0,
+      points: profile.points || 0
+    }
+    
+    console.log('User profile loaded:', profile)
+  } catch (error: any) {
+    console.error('Error loading profile:', error)
+    // Keep default values
+  } finally {
+    isLoadingProfile.value = false
   }
 }
 
-// Fetch dashboard statistics
-const loadDashboardStats = async () => {
-  if (!userId.value) return
-  
+// Fetch community-wide statistics
+const loadCommunityStats = async () => {
   isLoadingStats.value = true
   try {
-    const data = await DashboardService.getUserStats(userId.value)
-    stats.value = data
+    const data = await DashboardService.getCommunityStats()
+    communityStats.value = data
+    totalUsers.value = data.totalUsers  // Update totalUsers for display
+    
+    console.log('Community stats loaded:', data)
   } catch (error: any) {
-    console.error('Error loading stats:', error)
-    // Keep default values on error
+    console.error('Error loading community stats:', error)
+    // Keep default values
   } finally {
     isLoadingStats.value = false
   }
@@ -312,7 +333,7 @@ const loadRecentActivities = async () => {
       return {
         title: activity.title,
         description: activity.description,
-        time: formatTime(activity.timestamp),
+        time: activity.timeAgo || formatTime(activity.timestamp),
         status: isFound ? 'Found' : 'Lost',
         statusClass: isFound ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700',
         bgColor: isFound ? 'bg-green-100' : 'bg-red-100',
@@ -358,21 +379,25 @@ const loadRecentActivities = async () => {
 
 // Format timestamp to relative time
 const formatTime = (timestamp: string): string => {
-  const date = new Date(timestamp)
-  const now = new Date()
-  const diffInMs = now.getTime() - date.getTime()
-  const diffInHours = Math.floor(diffInMs / (1000 * 60 * 60))
-  const diffInDays = Math.floor(diffInHours / 24)
-  
-  if (diffInHours < 1) {
-    const diffInMinutes = Math.floor(diffInMs / (1000 * 60))
-    return `${diffInMinutes} minute${diffInMinutes !== 1 ? 's' : ''} ago`
-  } else if (diffInHours < 24) {
-    return `${diffInHours} hour${diffInHours !== 1 ? 's' : ''} ago`
-  } else if (diffInDays < 7) {
-    return `${diffInDays} day${diffInDays !== 1 ? 's' : ''} ago`
-  } else {
-    return date.toLocaleDateString()
+  try {
+    const date = new Date(timestamp)
+    const now = new Date()
+    const diffInMs = now.getTime() - date.getTime()
+    const diffInHours = Math.floor(diffInMs / (1000 * 60 * 60))
+    const diffInDays = Math.floor(diffInHours / 24)
+    
+    if (diffInHours < 1) {
+      const diffInMinutes = Math.floor(diffInMs / (1000 * 60))
+      return `${diffInMinutes} minute${diffInMinutes !== 1 ? 's' : ''} ago`
+    } else if (diffInHours < 24) {
+      return `${diffInHours} hour${diffInHours !== 1 ? 's' : ''} ago`
+    } else if (diffInDays < 7) {
+      return `${diffInDays} day${diffInDays !== 1 ? 's' : ''} ago`
+    } else {
+      return date.toLocaleDateString()
+    }
+  } catch {
+    return 'Recently'
   }
 }
 
@@ -395,9 +420,19 @@ const goToRanking = () => {
 
 // Load all data on component mount
 onMounted(async () => {
-  loadUserInfo()
+  // Check if user is logged in
+  userId.value = AuthService.getUserId()
+  
+  if (!userId.value) {
+    toast.error('Please login first')
+    router.push('/login')
+    return
+  }
+  
+  // Load all data in parallel
   await Promise.all([
-    loadDashboardStats(),
+    loadUserProfile(),
+    loadCommunityStats(),
     loadRecentActivities()
   ])
 })

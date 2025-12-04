@@ -103,6 +103,7 @@ export interface ActivityFeed {
   title: string
   description: string
   timestamp: string
+  timeAgo?: string  // Optional - backend may provide formatted time
 }
 
 export interface DashboardStats {
@@ -110,6 +111,14 @@ export interface DashboardStats {
   itemsLost: number
   matched: number
   points: number
+}
+
+// Community-wide statistics
+export interface CommunityStats {
+  totalItemsReturned: number
+  totalUsers: number
+  successRate: number
+  totalPoints: number
 }
 
 // ============= RANKING TYPES =============
