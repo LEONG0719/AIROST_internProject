@@ -46,6 +46,16 @@ public class LostClaim {
     @ElementCollection
     private List<String> extraProofUrls; // receipts etc
 
+    // === 🆕 NEW FIELDS FOR LAYER 3 PROOF ===
+    // We store the text ID specifically for this claim record
+    private String proofStudentIdNumber;
+
+    // URL to the image of the Student ID Card (Mandatory for approval)
+    private String proofStudentIdImage;
+
+    // URL to the receipt image (Optional)
+    private String proofReceiptImage;
+
     private Instant createdAt = Instant.now();
 
     // getters/setters

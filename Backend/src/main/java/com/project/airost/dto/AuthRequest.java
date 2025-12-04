@@ -6,5 +6,6 @@ import lombok.Data;
 public class AuthRequest {
     private String email;
     private String password;
-    private String fullName; // Optional, used only for Register
+    private String fullName;
+    private String studentId;
 }
