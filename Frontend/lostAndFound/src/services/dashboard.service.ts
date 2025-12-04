@@ -30,6 +30,14 @@ export class DashboardService {
   }
 
   /**
+   * Get count of claimed (matched) items
+   */
+  static async getClaimedItemsCount(): Promise<number> {
+    const response = await httpClient.get<any[]>('/api/found-items/browse/claimed')
+    return response.data.length
+  }
+
+  /**
    * Get user dashboard statistics (personal stats)
    * Note: This endpoint needs to be implemented by backend
    * For now, we'll get it from user profile

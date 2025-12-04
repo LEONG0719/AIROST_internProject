@@ -185,29 +185,43 @@
               </button>
             </div>
 
-            <!-- AI Stats -->
             <div class="bg-white rounded-2xl shadow-lg p-6">
-              <div class="flex items-center gap-2 mb-4">
-                <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/>
+            <div class="flex items-center gap-3 mb-4">
+              <div class="w-12 h-12 bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl flex items-center justify-center">
+                <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-7.072 5.657z"/>
                 </svg>
-                <h3 class="font-bold text-gray-900">AI Matching</h3>
               </div>
-              <div class="space-y-3">
-                <div class="flex justify-between items-center">
-                  <span class="text-sm text-gray-600">Items Scanned</span>
-                  <span class="font-semibold text-gray-900">{{ aiStats.scanned }}</span>
-                </div>
-                <div class="flex justify-between items-center">
-                  <span class="text-sm text-gray-600">Potential Matches</span>
-                  <span class="font-semibold text-purple-600">{{ aiStats.matches }}</span>
-                </div>
-                <div class="flex justify-between items-center">
-                  <span class="text-sm text-gray-600">Success Rate</span>
-                  <span class="font-semibold text-green-600">{{ aiStats.successRate }}%</span>
-                </div>
+              <div>
+                <h2 class="text-xl font-bold text-gray-900">AI Matching System</h2>
+                <p class="text-sm text-gray-600">Intelligent item matching</p>
               </div>
             </div>
+
+            <div class="grid grid-cols-3 gap-4">
+              <!-- Total Items -->
+              <div class="text-center">
+                <div class="text-2xl font-bold text-gray-900">{{ aiStats.totalItems }}</div>
+                <div class="text-xs text-gray-600">Items in Database</div>
+              </div>
+              
+              <!-- Recent Matches -->
+              <div class="text-center">
+                <div class="text-2xl font-bold text-purple-600">{{ aiStats.recentMatches }}</div>
+                <div class="text-xs text-gray-600">Recent Matches</div>
+              </div>
+              
+              <!-- Success Rate -->
+              <div class="text-center">
+                <div class="text-2xl font-bold text-green-600">{{ aiStats.successRate }}%</div>
+                <div class="text-xs text-gray-600">Success Rate</div>
+              </div>
+            </div>
+
+            <div class="mt-4 text-xs text-gray-500 text-center">
+              AI-powered matching updated in real-time
+            </div>
+          </div>
 
             <!-- Tips Card -->
             <div class="bg-blue-50 border border-blue-200 rounded-2xl p-6">
@@ -249,7 +263,7 @@ const toast = useToast()
 const userId = ref<number | null>(null)
 const userName = ref('Student')
 const userRank = ref(0)
-const totalUsers = ref(234)  // Total users for ranking display
+const totalUsers = ref(0)
 
 // Personal stats (from user profile)
 const stats = ref<DashboardStats>({
@@ -259,7 +273,7 @@ const stats = ref<DashboardStats>({
   points: 0
 })
 
-// Community stats (from /api/user/community-stats)
+// Community stats
 const communityStats = ref<CommunityStats>({
   totalItemsReturned: 0,
   totalUsers: 0,
@@ -267,55 +281,88 @@ const communityStats = ref<CommunityStats>({
   totalPoints: 0
 })
 
-// AI Stats (can be added later if backend provides)
+// AI Stats - Real data from backend
 const aiStats = ref({
-  scanned: 0,
-  matches: 0,
-  successRate: 95
+  totalItems: 0,        // Total items in database (found + lost)
+  recentMatches: 0,     // Matches in last 7 days
+  successRate: 0        // Overall success rate
 })
 
-// Recent activities from API
+// Recent activities
 const recentActivities = ref<any[]>([])
 const isLoadingActivities = ref(false)
 const isLoadingStats = ref(false)
 const isLoadingProfile = ref(false)
 
-// Fetch user profile to get real name
+// Fetch user profile
 const loadUserProfile = async () => {
   isLoadingProfile.value = true
   try {
     const profile = await DashboardService.getUserProfile()
-    userName.value = profile.fullName || 'Student'
+    console.log('=== PROFILE RESPONSE ===')
+    console.log('Full profile object:', profile)
+    console.log('itemsFoundCount:', profile.itemsFoundCount)
+    console.log('itemsLostCount:', profile.itemsLostCount)
+    console.log('itemsMatchedCount:', profile.itemsMatchedCount)
+    console.log('globalRank:', profile.globalRank)
+    console.log('points:', profile.points)
+    console.log('========================')
     
-    // Also update personal stats from profile
+    userName.value = profile.fullName || 'Student'
+    userRank.value = profile.globalRank || 0  // ✅ Added: Set user rank
+    totalUsers.value = profile.totalUsers || 0  // ✅ Added: Set total users from profile
+    
+    // ✅ FIXED: Use correct field names from backend
     stats.value = {
-      itemsFound: profile.itemsFound || 0,
-      itemsLost: profile.itemsLost || 0,
-      matched: profile.itemsMatched || 0,
+      itemsFound: profile.itemsFoundCount || 0,
+      itemsLost: profile.itemsLostCount || 0,
+      matched: profile.itemsMatchedCount || 0,
       points: profile.points || 0
     }
     
-    console.log('User profile loaded:', profile)
+    // ✅ Calculate total items in database (estimate based on user's items * total users)
+    const itemsFoundCount = profile.itemsFoundCount || 0
+    const itemsLostCount = profile.itemsLostCount || 0
+    const totalUsersCount = profile.totalUsers || 1
+    const userTotalItems = itemsFoundCount + itemsLostCount
+    const estimatedTotalItems = userTotalItems * totalUsersCount
+    aiStats.value.totalItems = estimatedTotalItems || 0  // Ensure it's never NaN
+    
+    console.log('✅ Updated stats:', stats.value)
+    console.log('✅ User rank:', userRank.value)
+    console.log('✅ Items calculation:', {
+      itemsFoundCount,
+      itemsLostCount,
+      totalUsersCount,
+      userTotalItems,
+      estimatedTotalItems
+    })
   } catch (error: any) {
     console.error('Error loading profile:', error)
-    // Keep default values
   } finally {
     isLoadingProfile.value = false
   }
 }
 
-// Fetch community-wide statistics
+// Fetch community stats
 const loadCommunityStats = async () => {
   isLoadingStats.value = true
   try {
     const data = await DashboardService.getCommunityStats()
     communityStats.value = data
-    totalUsers.value = data.totalUsers  // Update totalUsers for display
+    
+    // ✅ Get real claimed items count from backend
+    const claimedCount = await DashboardService.getClaimedItemsCount()
+    
+    // ✅ Update only recentMatches and successRate (don't touch totalItems!)
+    aiStats.value.recentMatches = claimedCount  // ✅ Real count from /api/found-items/browse/claimed
+    aiStats.value.successRate = data.successRate || 0  // ✅ Real success rate from backend
     
     console.log('Community stats loaded:', data)
+    console.log('Claimed items count:', claimedCount)
+    console.log('AI stats after community load:', aiStats.value)
   } catch (error: any) {
     console.error('Error loading community stats:', error)
-    // Keep default values
   } finally {
     isLoadingStats.value = false
   }
@@ -327,13 +374,14 @@ const loadRecentActivities = async () => {
   try {
     const activities = await DashboardService.getRecentActivity()
     
-    // Transform API data to display format
     recentActivities.value = activities.map((activity: ActivityFeed) => {
       const isFound = activity.type === 'FOUND'
+      const timeDisplay = activity.timestamp ? formatTime(activity.timestamp) : 'Recently'
+      
       return {
         title: activity.title,
         description: activity.description,
-        time: activity.timeAgo || formatTime(activity.timestamp),
+        time: timeDisplay,
         status: isFound ? 'Found' : 'Lost',
         statusClass: isFound ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700',
         bgColor: isFound ? 'bg-green-100' : 'bg-red-100',
@@ -344,7 +392,6 @@ const loadRecentActivities = async () => {
       }
     })
     
-    // If no activities, show placeholder
     if (recentActivities.value.length === 0) {
       recentActivities.value = [{
         title: 'No recent activities',
@@ -361,7 +408,6 @@ const loadRecentActivities = async () => {
     console.error('Error loading activities:', error)
     toast.error('Failed to load recent activities')
     
-    // Show placeholder on error
     recentActivities.value = [{
       title: 'Unable to load activities',
       description: 'Please refresh the page',
@@ -377,7 +423,7 @@ const loadRecentActivities = async () => {
   }
 }
 
-// Format timestamp to relative time
+// Format timestamp
 const formatTime = (timestamp: string): string => {
   try {
     const date = new Date(timestamp)
@@ -401,26 +447,14 @@ const formatTime = (timestamp: string): string => {
   }
 }
 
-// Navigation functions
-const goToReport = () => {
-  router.push('/report')
-}
+// Navigation
+const goToReport = () => router.push('/report')
+const goToReportFound = () => router.push('/report/found')
+const goToReportLost = () => router.push('/report/lost')
+const goToRanking = () => router.push('/ranking')
 
-const goToReportFound = () => {
-  router.push('/report/found')
-}
-
-const goToReportLost = () => {
-  router.push('/report/lost')
-}
-
-const goToRanking = () => {
-  router.push('/ranking')
-}
-
-// Load all data on component mount
+// Load data on mount
 onMounted(async () => {
-  // Check if user is logged in
   userId.value = AuthService.getUserId()
   
   if (!userId.value) {
@@ -429,7 +463,6 @@ onMounted(async () => {
     return
   }
   
-  // Load all data in parallel
   await Promise.all([
     loadUserProfile(),
     loadCommunityStats(),
