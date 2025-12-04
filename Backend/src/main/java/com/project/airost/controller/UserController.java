@@ -1,5 +1,6 @@
 package com.project.airost.controller;
 
+import com.project.airost.dto.CommunityStatsResponse;
 import com.project.airost.dto.LeaderboardEntry;
 import com.project.airost.dto.UserProfileResponse;
 import com.project.airost.security.JwtUtil;
@@ -36,5 +37,10 @@ public class UserController {
     @GetMapping("/leaderboard")
     public ResponseEntity<List<LeaderboardEntry>> getLeaderboard() {
         return ResponseEntity.ok(userService.getLeaderboard());
+    }
+
+    @GetMapping("/community-stats")
+    public ResponseEntity<CommunityStatsResponse> getCommunityStats() {
+        return ResponseEntity.ok(userService.getCommunityStats());
     }
 }

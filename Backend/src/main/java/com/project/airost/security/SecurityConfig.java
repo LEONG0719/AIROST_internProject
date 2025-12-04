@@ -23,12 +23,11 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-                // 2. ENABLE CORS HERE (Crucial Step!)
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
-                        // 1. Allow Register/Login/Verify
-                        .requestMatchers("/api/auth/").permitAll()
+                        // 1. Allow Register/Login/Verify (MUST HAVE **)
+                        .requestMatchers("/api/auth/**").permitAll()  // <--- FIXED
 
                         // ============================================================
                         // 2. FOUND ITEMS VISIBILITY RULES
@@ -37,20 +36,20 @@ public class SecurityConfig {
                         // Rule A: Specific path for "Success Stories" -> OPEN to everyone
                         .requestMatchers("/api/found-items/browse/claimed").permitAll()
 
-                        // Rule B: Allow access to uploads folder so images can load
-                        .requestMatchers("/uploads/").permitAll()
-
-                        // Rule C: All other found-item paths -> LOCKED
-                        .requestMatchers("/api/found-items/").authenticated()
+                        // Rule B: Allow access to uploads folder (MUST HAVE **)
+                        .requestMatchers("/uploads/**").permitAll()   // <--- FIXED
 
                         // ============================================================
 
-                        // 3. Admin action
+                        // 3. Admin actions
                         .requestMatchers("/api/found-items/admin/**").hasRole("ADMIN")
                         .requestMatchers("/api/claims/admin/**").hasRole("ADMIN")
-                        .requestMatchers("/api/claims/*/admin/**").hasRole("ADMIN") // For approve/reject
+                        .requestMatchers("/api/claims/*/admin/**").hasRole("ADMIN")
 
-
+                        // Rule C: All other found-item paths -> LOCKED (MUST HAVE **)
+                        // Placed AFTER specific admin/public rules
+                        .requestMatchers("/api/found-items/**").authenticated()
+                        .requestMatchers("/api/user/community-stats/**").permitAll()// <--- FIXED
 
                         // 4. Everything else needs login
                         .anyRequest().authenticated()
@@ -60,7 +59,6 @@ public class SecurityConfig {
 
         return http.build();
     }
-
     // 3. DEFINE THE CORS RULES (Add this method)
     @Bean
     public UrlBasedCorsConfigurationSource corsConfigurationSource() {
