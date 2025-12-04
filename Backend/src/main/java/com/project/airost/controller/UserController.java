@@ -13,7 +13,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/user")
-@CrossOrigin(origins = {"http://localhost:5173", "http://localhost:5174"}, allowedHeaders = "*", methods = {RequestMethod.GET})
+@CrossOrigin(origins = {"http://localhost:5173"}, allowedHeaders = "*", methods = {RequestMethod.GET})
 @RequiredArgsConstructor
 public class UserController {
 
