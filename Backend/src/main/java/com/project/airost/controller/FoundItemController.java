@@ -6,6 +6,7 @@ import com.project.airost.repository.FoundItemRepository;
 import com.project.airost.repository.UserRepository;
 import com.project.airost.service.FileStorageService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -16,7 +17,7 @@ import java.util.List;
 
 @RestController
 @RequiredArgsConstructor
-@CrossOrigin(origins = "http://localhost:5173", allowedHeaders = "*", methods = {RequestMethod.GET, RequestMethod.POST})
+@CrossOrigin(origins = "http://localhost:5177", allowedHeaders = "*", methods = {RequestMethod.GET, RequestMethod.POST})
 @RequestMapping("/api/found-items")
 public class FoundItemController {
 
@@ -43,7 +44,6 @@ public class FoundItemController {
 
     @PostMapping(consumes = {"multipart/form-data"})
     public ResponseEntity<FoundItem> reportFoundItem(
-            // We can reuse LostClaimRequest logic or just map params manually for simplicity
             @RequestParam("userId") Long userId,
             @RequestParam("title") String title,
             @RequestParam("description") String description,
@@ -57,6 +57,7 @@ public class FoundItemController {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
+        // 1. Create and Save Item
         FoundItem item = new FoundItem();
         item.setUser(user);
         item.setTitle(title);
@@ -68,14 +69,36 @@ public class FoundItemController {
         item.setFoundAt(Instant.now());
         item.setClaimed(false);
 
-        // Handle Image Upload
         if (image != null && !image.isEmpty()) {
             String imageUrl = fileStorageService.storeFile(image);
             item.setImageUrl(imageUrl);
         }
 
         FoundItem saved = repository.save(item);
+
+        // 2. ✅ NEW: Award Points for Reporting (+10)
+        int currentPoints = user.getPoints() == null ? 0 : user.getPoints();
+        user.setPoints(currentPoints + 10);
+        userRepository.save(user);
+
         return ResponseEntity.ok(saved);
+    }
+
+    // 1. Get ALL Found Items (Claimed & Unclaimed) for Admin Dashboard
+    @GetMapping("/admin/all")
+    public List<FoundItem> getAllItemsForAdmin() {
+        // Sort by newest first
+        return repository.findAll(Sort.by(Sort.Direction.DESC, "foundAt"));
+    }
+
+    // 2. Delete a Found Item
+    @DeleteMapping("/admin/{id}")
+    public ResponseEntity<?> deleteFoundItem(@PathVariable Long id) {
+        if (!repository.existsById(id)) {
+            return ResponseEntity.notFound().build();
+        }
+        repository.deleteById(id);
+        return ResponseEntity.ok("Item deleted successfully");
     }
 }
 

@@ -21,6 +21,8 @@ public class LostClaimServiceImpl implements LostClaimService {
 
     // Fixed Points amount
     private static final int POINTS_REWARD = 10;
+    private static final int POINTS_MATCH = 25;
+    private static final int POINTS_RETURN = 50;
 
     public LostClaimServiceImpl(LostClaimRepository lostClaimRepo,
                                 FoundItemRepository foundItemRepo,
@@ -188,7 +190,8 @@ public class LostClaimServiceImpl implements LostClaimService {
     private void rewardFinder(FoundItem matchedItem) {
         // Only give points if the item wasn't already marked as claimed (prevents double points)
         if (matchedItem != null && !matchedItem.isClaimed()) {
-            // 1. Mark item as claimed
+
+            // 1. Mark item as claimed (Item Returned)
             matchedItem.setClaimed(true);
             foundItemRepo.save(matchedItem);
 
@@ -196,12 +199,17 @@ public class LostClaimServiceImpl implements LostClaimService {
             User finder = matchedItem.getUser();
             if (finder != null) {
                 int currentPoints = finder.getPoints() == null ? 0 : finder.getPoints();
-                finder.setPoints(currentPoints + POINTS_REWARD);
+
+                // Logic: Successful Match (+25) + Item Returned (+50)
+                int totalReward = POINTS_MATCH + POINTS_RETURN;
+
+                finder.setPoints(currentPoints + totalReward);
                 userRepo.save(finder);
+
+                System.out.println("🎉 Added " + totalReward + " points to Finder ID: " + finder.getId());
             }
         }
     }
-
     private String joinNonNull(String... parts) {
         StringBuilder sb = new StringBuilder();
         for (String part : parts) {
