@@ -1,7 +1,7 @@
 <template>
   <div class="mb-6">
     <label class="block text-sm font-semibold text-gray-700 mb-2">
-      Where did you find it? <span class="text-red-500">*</span>
+      Where did you lose it? 
     </label>
     
     <div class="relative" ref="dropdownRef">
