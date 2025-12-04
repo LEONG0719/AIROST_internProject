@@ -69,12 +69,12 @@
 
         <form @submit.prevent="handleLogin">
 
-          <!-- Registration Input -->
-          <label class="text-xs font-semibold text-gray-600">REGISTRATION NO. / EMAIL</label>
+          <!-- Email Input -->
+          <label class="text-xs font-semibold text-gray-600">EMAIL ADDRESS</label>
           <input
-            v-model="username"
-            type="text"
-            placeholder="eg. yourname@graduate.utm.my"
+            v-model="email"
+            type="email"
+            placeholder="yourname@graduate.utm.my"
             class="w-full mb-4 mt-1 p-3 border rounded focus:ring-2 focus:ring-blue-600 bg-white outline-none"
             required
           />
@@ -163,7 +163,8 @@
           </button>
 
         </form>
-          <!-- Get Started / Sign Up Link -->
+        
+        <!-- Get Started / Sign Up Link -->
         <div class="flex items-center text-sm mb-8 justify-center mt-8 md:mt-12">
           <span>Don't Have An Account?</span>
           <button
@@ -186,8 +187,9 @@
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useToast } from "vue-toastification"
+import AuthService from '../services/auth.service'
 
-const username = ref('')
+const email = ref('')
 const password = ref('')
 const showPassword = ref(false)
 const captchaCode = ref('')
@@ -223,26 +225,43 @@ const handleLogin = async () => {
     return
   }
 
-  if (!username.value || !password.value) {
-    toast.warning('Please enter username and password') 
+  if (!email.value || !password.value) {
+    toast.warning('Please enter email and password') 
     return
   }
 
   isLoading.value = true
   
   try {
-    // Simulate authentication delay (replace with actual API call)
-    await new Promise(resolve => setTimeout(resolve, 2000))
+    // Real API call to backend
+    const response = await AuthService.login(email.value, password.value)
     
+    // Success! Token is automatically stored by AuthService
     toast.success('Login successful! Redirecting...') 
+    
+    console.log('Login response:', response)
+    console.log('User ID:', response.userId)
+    console.log('User Role:', response.role)
     
     // Navigate to dashboard
     setTimeout(() => {
       router.push('/dashboard')
     }, 500)
-  } catch (error) {
-    toast.error('Login failed. Please try again.') 
+    
+  } catch (error: any) {
+    // Handle different error types
     isLoading.value = false
+    generateCaptcha() // Reset captcha on error
+    
+    if (error.message) {
+      // Show error message from backend
+      toast.error(error.message)
+    } else {
+      // Generic error
+      toast.error('Login failed. Please check your credentials.')
+    }
+    
+    console.error('Login error:', error)
   }
 }
 

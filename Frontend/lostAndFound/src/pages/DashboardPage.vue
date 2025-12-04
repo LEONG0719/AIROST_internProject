@@ -234,72 +234,148 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import DashboardLayout from '../layouts/DashboardLayout.vue'
+import { useToast } from 'vue-toastification'
+import AuthService from '../services/auth.service'
+import DashboardService from '../services/dashboard.service'
+import type { ActivityFeed, DashboardStats } from '../types/api.types'
 
 const router = useRouter()
+const toast = useToast()
 
-const userName = ref('John Doe')
+// User info from localStorage
+const userId = ref<number | null>(null)
+const userName = ref('User')
 const userRank = ref(15)
 const totalUsers = ref(234)
 
-const stats = ref({
-  itemsFound: 8,
-  itemsLost: 2,
-  matched: 3,
-  points: 125
+// Dashboard stats
+const stats = ref<DashboardStats>({
+  itemsFound: 0,
+  itemsLost: 0,
+  matched: 0,
+  points: 0
 })
 
 const aiStats = ref({
-  scanned: 156,
-  matches: 12,
-  successRate: 85
+  scanned: 0,
+  matches: 0,
+  successRate: 0
 })
 
-const recentActivities = [
-  {
-    title: 'iPhone 13 Pro Found',
-    description: 'AI matched with a lost item report',
-    time: '2 hours ago',
-    status: 'Matched',
-    statusClass: 'bg-green-100 text-green-700',
-    bgColor: 'bg-green-100',
-    iconColor: 'text-green-600',
-    icon: 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z'
-  },
-  {
-    title: 'Student ID Card Reported',
-    description: 'You reported a found item at Cafeteria',
-    time: '5 hours ago',
-    status: 'Pending',
-    statusClass: 'bg-yellow-100 text-yellow-700',
-    bgColor: 'bg-blue-100',
-    iconColor: 'text-blue-600',
-    icon: 'M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z'
-  },
-  {
-    title: 'Blue Backpack Claimed',
-    description: 'Owner verified and claimed the item',
-    time: '1 day ago',
-    status: 'Claimed',
-    statusClass: 'bg-purple-100 text-purple-700',
-    bgColor: 'bg-purple-100',
-    iconColor: 'text-purple-600',
-    icon: 'M5 13l4 4L19 7'
-  },
-  {
-    title: 'Lost Wallet Reported',
-    description: 'You reported a lost item',
-    time: '2 days ago',
-    status: 'Searching',
-    statusClass: 'bg-red-100 text-red-700',
-    bgColor: 'bg-red-100',
-    iconColor: 'text-red-600',
-    icon: 'M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z'
-  }
-]
+// Recent activities from API
+const recentActivities = ref<any[]>([])
+const isLoadingActivities = ref(false)
+const isLoadingStats = ref(false)
 
+// Fetch user info from localStorage
+const loadUserInfo = () => {
+  userId.value = AuthService.getUserId()
+  
+  // For now, use a default name
+  // You can fetch full user details from backend later
+  userName.value = 'Student'
+  
+  if (!userId.value) {
+    toast.error('Please login first')
+    router.push('/login')
+  }
+}
+
+// Fetch dashboard statistics
+const loadDashboardStats = async () => {
+  if (!userId.value) return
+  
+  isLoadingStats.value = true
+  try {
+    const data = await DashboardService.getUserStats(userId.value)
+    stats.value = data
+  } catch (error: any) {
+    console.error('Error loading stats:', error)
+    // Keep default values on error
+  } finally {
+    isLoadingStats.value = false
+  }
+}
+
+// Fetch recent activities
+const loadRecentActivities = async () => {
+  isLoadingActivities.value = true
+  try {
+    const activities = await DashboardService.getRecentActivity()
+    
+    // Transform API data to display format
+    recentActivities.value = activities.map((activity: ActivityFeed) => {
+      const isFound = activity.type === 'FOUND'
+      return {
+        title: activity.title,
+        description: activity.description,
+        time: formatTime(activity.timestamp),
+        status: isFound ? 'Found' : 'Lost',
+        statusClass: isFound ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700',
+        bgColor: isFound ? 'bg-green-100' : 'bg-red-100',
+        iconColor: isFound ? 'text-green-600' : 'text-red-600',
+        icon: isFound 
+          ? 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z'
+          : 'M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z'
+      }
+    })
+    
+    // If no activities, show placeholder
+    if (recentActivities.value.length === 0) {
+      recentActivities.value = [{
+        title: 'No recent activities',
+        description: 'Start by reporting a found or lost item!',
+        time: 'Now',
+        status: 'Info',
+        statusClass: 'bg-blue-100 text-blue-700',
+        bgColor: 'bg-blue-100',
+        iconColor: 'text-blue-600',
+        icon: 'M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z'
+      }]
+    }
+  } catch (error: any) {
+    console.error('Error loading activities:', error)
+    toast.error('Failed to load recent activities')
+    
+    // Show placeholder on error
+    recentActivities.value = [{
+      title: 'Unable to load activities',
+      description: 'Please refresh the page',
+      time: 'Now',
+      status: 'Error',
+      statusClass: 'bg-red-100 text-red-700',
+      bgColor: 'bg-red-100',
+      iconColor: 'text-red-600',
+      icon: 'M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z'
+    }]
+  } finally {
+    isLoadingActivities.value = false
+  }
+}
+
+// Format timestamp to relative time
+const formatTime = (timestamp: string): string => {
+  const date = new Date(timestamp)
+  const now = new Date()
+  const diffInMs = now.getTime() - date.getTime()
+  const diffInHours = Math.floor(diffInMs / (1000 * 60 * 60))
+  const diffInDays = Math.floor(diffInHours / 24)
+  
+  if (diffInHours < 1) {
+    const diffInMinutes = Math.floor(diffInMs / (1000 * 60))
+    return `${diffInMinutes} minute${diffInMinutes !== 1 ? 's' : ''} ago`
+  } else if (diffInHours < 24) {
+    return `${diffInHours} hour${diffInHours !== 1 ? 's' : ''} ago`
+  } else if (diffInDays < 7) {
+    return `${diffInDays} day${diffInDays !== 1 ? 's' : ''} ago`
+  } else {
+    return date.toLocaleDateString()
+  }
+}
+
+// Navigation functions
 const goToReport = () => {
   router.push('/report')
 }
@@ -315,4 +391,13 @@ const goToReportLost = () => {
 const goToRanking = () => {
   router.push('/ranking')
 }
+
+// Load all data on component mount
+onMounted(async () => {
+  loadUserInfo()
+  await Promise.all([
+    loadDashboardStats(),
+    loadRecentActivities()
+  ])
+})
 </script>

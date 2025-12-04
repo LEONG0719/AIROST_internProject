@@ -261,6 +261,7 @@
 import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useToast } from "vue-toastification"
+import AuthService from '../services/auth.service'
 
 const router = useRouter()
 const toast = useToast()
@@ -339,11 +340,15 @@ const handleSignup = async () => {
   isLoading.value = true
   
   try {
-    // Simulate API call (replace with real API later)
-    await new Promise(resolve => setTimeout(resolve, 2000))
+    // Real API call to backend
+    await AuthService.register({
+      fullName: form.value.fullName,
+      email: form.value.email,
+      password: form.value.password
+    })
     
     // Show success message
-    toast.success('Registration successful!')
+    toast.success('Registration successful! Please check your email.')
     showSuccessMessage.value = true
     
     // Optional: Auto redirect after 5 seconds
@@ -352,8 +357,16 @@ const handleSignup = async () => {
     }, 5000)
     
   } catch (error: any) {
-    toast.error('Registration failed. Please try again.')
     isLoading.value = false
+    
+    // Handle error from backend
+    if (error.message) {
+      toast.error(error.message)
+    } else {
+      toast.error('Registration failed. Please try again.')
+    }
+    
+    console.error('Registration error:', error)
   }
 }
 

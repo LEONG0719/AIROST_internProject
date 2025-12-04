@@ -6,9 +6,7 @@ import com.project.airost.dto.ActivityFeedDto;
 import com.project.airost.repository.FoundItemRepository;
 import com.project.airost.repository.LostClaimRepository;
 import lombok.RequiredArgsConstructor;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -18,6 +16,7 @@ import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/dashboard")
+@CrossOrigin(origins = "http://localhost:5173", allowedHeaders = "*", methods = {RequestMethod.GET})
 @RequiredArgsConstructor
 public class DashboardController {
 
