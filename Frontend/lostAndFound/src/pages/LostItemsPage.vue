@@ -243,32 +243,20 @@
 
 <script setup lang="ts">
 import { ref, computed } from 'vue'
-import { useToast } from "vue-toastification"
+import { useRouter } from 'vue-router'
+import { useToast } from 'vue-toastification'
 import DashboardLayout from '../layouts/DashboardLayout.vue'
-import InstructionCard from '../components/ui/InstructionCard.vue'
 import ImageUpload from '../components/form/ImageUpload.vue'
-import AIMatchingInfo from '../components/ui/AIMatchingInfo.vue'
 import LocationSelect from '../components/form/LocationSelect.vue'
+import InstructionCard from '../components/ui/InstructionCard.vue'
+import LostClaimService from '../services/lostclaim.service'
+import AuthService from '../services/auth.service'
+import type { LostClaimRequest } from '../types/api.types'
 
+const router = useRouter()
 const toast = useToast()
 
-interface FormData {
-  itemName: string
-  category: string
-  otherCategory: string
-  brand: string
-  color: string
-  marking: string
-  description: string
-  location: string
-  otherLocation: string
-  dateLost: string
-  phoneNumber: string
-  preferredContact: string
-  image: File | null
-}
-
-const form = ref<FormData>({
+const form = ref({
   itemName: '',
   category: '',
   otherCategory: '',
@@ -281,7 +269,7 @@ const form = ref<FormData>({
   dateLost: '',
   phoneNumber: '',
   preferredContact: 'email',
-  image: null
+  image: null as File | null
 })
 
 const imagePreview = ref<string | null>(null)
@@ -295,63 +283,168 @@ const today = computed(() => {
   return date.toISOString().split('T')[0]
 })
 
+const handleImageSelected = (file: File | null) => {
+  form.value.image = file
+  
+  if (file) {
+    const reader = new FileReader()
+    reader.onload = (e) => {
+      imagePreview.value = e.target?.result as string
+    }
+    reader.readAsDataURL(file)
+  } else {
+    imagePreview.value = null
+  }
+}
+
 const handlePreviewUpdate = (preview: string | null) => {
   imagePreview.value = preview
 }
 
-const handleSubmit = async () => {
-  // Validate "Other" fields
-  if (form.value.category === 'Others' && !form.value.otherCategory) {
-    toast.warning('Please specify the category')
-    return
+const handleLocationSelected = (location: string) => {
+  form.value.location = location
+}
+
+const validateForm = (): boolean => {
+  // Check required fields
+  if (!form.value.itemName.trim()) {
+    toast.error('Please enter the item name')
+    return false
   }
 
-  if (form.value.location === 'Other' && !form.value.otherLocation) {
-    toast.warning('Please specify the location')
+  if (!form.value.category) {
+    toast.error('Please select a category')
+    return false
+  }
+
+  if (form.value.category === 'Others' && !form.value.otherCategory.trim()) {
+    toast.error('Please specify the category')
+    return false
+  }
+
+  if (!form.value.color.trim()) {
+    toast.error('Please enter the color')
+    return false
+  }
+
+  if (!form.value.description.trim()) {
+    toast.error('Please enter a description')
+    return false
+  }
+
+  // Location is now OPTIONAL - removed validation
+  // If "Other" is selected, still validate the otherLocation field
+  if (form.value.location === 'Other' && !form.value.otherLocation.trim()) {
+    toast.error('Please specify the location')
+    return false
+  }
+
+  if (!form.value.dateLost) {
+    toast.error('Please select when you lost the item')
+    return false
+  }
+
+  if (!form.value.phoneNumber.trim()) {
+    toast.error('Please enter your phone number')
+    return false
+  }
+
+  return true
+}
+
+const handleSubmit = async () => {
+  console.log('=== LOST ITEM SUBMIT STARTED ===')
+  
+  // Check if user is logged in
+  if (!AuthService.isAuthenticated()) {
+    console.log('ERROR: Not authenticated')
+    toast.error('Please login first')
+    router.push('/login')
     return
   }
+  
+  console.log('User ID:', AuthService.getUserId())
+  console.log('Form data:', form.value)
+
+  // Validate form
+  if (!validateForm()) {
+    console.log('ERROR: Validation failed')
+    return
+  }
+  
+  console.log('Validation passed!')
 
   isSubmitting.value = true
 
   try {
-    const formData = new FormData()
-    formData.append('itemName', form.value.itemName)
-    
-    const finalCategory = form.value.category === 'Others' ? form.value.otherCategory : form.value.category
-    formData.append('category', finalCategory)
-    
-    formData.append('brand', form.value.brand)
-    formData.append('color', form.value.color)
-    formData.append('marking', form.value.marking)
-    formData.append('description', form.value.description)
-    
-    const finalLocation = form.value.location === 'Other' ? form.value.otherLocation : form.value.location
-    formData.append('location', finalLocation)
-    
-    formData.append('dateLost', form.value.dateLost)
-    formData.append('phoneNumber', form.value.phoneNumber)
-    formData.append('preferredContact', form.value.preferredContact)
-    
-    // Image is optional
-    if (form.value.image) {
-      formData.append('image', form.value.image)
+    // Prepare data for API
+    const finalCategory = form.value.category === 'Others' 
+      ? form.value.otherCategory 
+      : form.value.category
+
+    const finalLocation = form.value.location === 'Other'
+      ? form.value.otherLocation
+      : form.value.location
+
+    console.log('Final category:', finalCategory)
+    console.log('Final location:', finalLocation)
+
+    // Build full description with all details
+    const fullDescription = `
+${form.value.description}
+
+Lost at: ${finalLocation}
+Date Lost: ${form.value.dateLost}
+Phone: ${form.value.phoneNumber}
+Preferred Contact: ${form.value.preferredContact}
+    `.trim()
+
+    const requestData: LostClaimRequest = {
+      description: fullDescription,
+      category: finalCategory,
+      color: form.value.color,
+      brand: form.value.brand || 'Unknown',
+      specialMarking: form.value.marking || undefined,
+      remarks: `Contact: ${form.value.preferredContact} - ${form.value.phoneNumber}`,
+      location: finalLocation
     }
 
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 2000))
+    console.log('Request data:', requestData)
+    console.log('Image file:', form.value.image)
 
-    // TODO: Replace with actual API call
-    // const response = await fetch('/api/lost/add', {
-    //   method: 'POST',
-    //   body: formData
-    // })
+    // Submit to backend with image
+    console.log('Calling LostClaimService.submitClaim...')
+    const result = await LostClaimService.submitClaim(
+      requestData,
+      form.value.image || undefined
+    )
 
+    console.log('SUCCESS! Claim submitted:', result)
+    
     toast.success('Lost item reported successfully! We will notify you if a match is found.')
+    
+    // Reset form
     resetForm()
-  } catch (error) {
-    console.error('Error submitting form:', error)
-    toast.error('Failed to submit report. Please try again.')
+    
+    // Redirect to dashboard after 2 seconds
+    setTimeout(() => {
+      router.push('/dashboard')
+    }, 2000)
+    
+  } catch (error: any) {
+    console.error('=== ERROR SUBMITTING ===')
+    console.error('Error object:', error)
+    console.error('Error message:', error.message)
+    console.error('Error response:', error.response)
+    
+    // Show specific error message if available
+    if (error.message) {
+      toast.error(error.message)
+    } else {
+      toast.error('Failed to submit report. Please try again.')
+    }
   } finally {
+    console.log('=== SUBMIT ENDED ===')
     isSubmitting.value = false
   }
 }
@@ -377,39 +470,3 @@ const resetForm = () => {
   imageKey.value++
 }
 </script>
-
-<style scoped>
-/* Custom scrollbar */
-textarea::-webkit-scrollbar {
-  width: 8px;
-}
-
-textarea::-webkit-scrollbar-track {
-  background: #f1f1f1;
-  border-radius: 4px;
-}
-
-textarea::-webkit-scrollbar-thumb {
-  background: #888;
-  border-radius: 4px;
-}
-
-textarea::-webkit-scrollbar-thumb:hover {
-  background: #555;
-}
-
-/* Expand animation */
-.expand-enter-active,
-.expand-leave-active {
-  transition: all 0.3s ease;
-  max-height: 100px;
-  overflow: hidden;
-}
-
-.expand-enter-from,
-.expand-leave-to {
-  opacity: 0;
-  max-height: 0;
-  margin-top: 0;
-}
-</style>

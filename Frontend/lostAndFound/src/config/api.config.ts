@@ -27,8 +27,10 @@ export const API_CONFIG = {
     
     // Lost Claims endpoints
     CLAIMS: {
-      CREATE: '/api/claims',
+      SUBMIT: '/api/claims',         // Same as CREATE - for submitting claims
+      CREATE: '/api/claims',         // Keep for backwards compatibility
       PENDING: '/api/claims/pending-verification',
+      DETAIL: (id: number) => `/api/claims/${id}`,  // Get claim by ID
       APPROVE: (id: number) => `/api/claims/${id}/admin/approve`,
       REJECT: (id: number) => `/api/claims/${id}/admin/reject`,
     },
