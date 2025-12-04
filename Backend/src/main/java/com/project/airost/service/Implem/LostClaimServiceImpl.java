@@ -19,6 +19,9 @@ public class LostClaimServiceImpl implements LostClaimService {
     private final AdminVerificationRepository adminVerificationRepo;
     private final AiService aiService;
 
+    // Fixed Points amount
+    private static final int POINTS_REWARD = 10;
+
     public LostClaimServiceImpl(LostClaimRepository lostClaimRepo,
                                 FoundItemRepository foundItemRepo,
                                 UserRepository userRepo,
@@ -76,11 +79,8 @@ public class LostClaimServiceImpl implements LostClaimService {
             saved.setBestSimilarityScore(bestImageScore);
             saved.setMatchedFoundItem(bestImageMatch);
 
-            // ✅ AUTO-UPDATE FOUND ITEM TO CLAIMED
-            if (bestImageMatch != null) {
-                bestImageMatch.setClaimed(true);
-                foundItemRepo.save(bestImageMatch);
-            }
+            // ✅ CHANGED: Use helper to Reward Points + Mark Claimed
+            rewardFinder(bestImageMatch);
 
             return lostClaimRepo.save(saved);
         } else if (bestImageScore >= 60) {
@@ -114,11 +114,8 @@ public class LostClaimServiceImpl implements LostClaimService {
             saved.setBestSimilarityScore(bestTextScore);
             saved.setMatchedFoundItem(bestTextMatch);
 
-            // ✅ AUTO-UPDATE FOUND ITEM TO CLAIMED
-            if (bestTextMatch != null) {
-                bestTextMatch.setClaimed(true);
-                foundItemRepo.save(bestTextMatch);
-            }
+            //  Use helper to Reward Points + Mark Claimed
+            rewardFinder(bestTextMatch);
 
             return lostClaimRepo.save(saved);
         } else if (bestTextScore >= 60) {
@@ -151,11 +148,9 @@ public class LostClaimServiceImpl implements LostClaimService {
 
         claim.setStatus(LostClaim.ClaimStatus.APPROVED);
 
-        // ✅ AUTO-UPDATE FOUND ITEM TO CLAIMED (If Admin Manually Approves)
+        // Use helper to Reward Points + Mark Claimed
         if (claim.getMatchedFoundItem() != null) {
-            FoundItem matchedItem = claim.getMatchedFoundItem();
-            matchedItem.setClaimed(true);
-            foundItemRepo.save(matchedItem);
+            rewardFinder(claim.getMatchedFoundItem());
         }
 
         lostClaimRepo.save(claim);
@@ -185,6 +180,26 @@ public class LostClaimServiceImpl implements LostClaimService {
         av.setNotes(note);
         adminVerificationRepo.save(av);
         return claim;
+    }
+
+    // ==========================================
+    // 🔹 NEW HELPER METHOD TO ADD POINTS
+    // ==========================================
+    private void rewardFinder(FoundItem matchedItem) {
+        // Only give points if the item wasn't already marked as claimed (prevents double points)
+        if (matchedItem != null && !matchedItem.isClaimed()) {
+            // 1. Mark item as claimed
+            matchedItem.setClaimed(true);
+            foundItemRepo.save(matchedItem);
+
+            // 2. Add points to the Finder
+            User finder = matchedItem.getUser();
+            if (finder != null) {
+                int currentPoints = finder.getPoints() == null ? 0 : finder.getPoints();
+                finder.setPoints(currentPoints + POINTS_REWARD);
+                userRepo.save(finder);
+            }
+        }
     }
 
     private String joinNonNull(String... parts) {

@@ -7,4 +7,8 @@ import java.util.List;
 public interface LostClaimRepository extends JpaRepository<LostClaim, Long> {
     List<LostClaim> findByUserId(Long userId);
     List<LostClaim> findByStatus(LostClaim.ClaimStatus status);
+    long countByUserId(Long userId);
+
+    // Count successful matches (APPROVED claims)
+    long countByUserIdAndStatus(Long userId, LostClaim.ClaimStatus status);
 }

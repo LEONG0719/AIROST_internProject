@@ -8,4 +8,5 @@ public interface FoundItemRepository extends JpaRepository<FoundItem, Long> {
     List<FoundItem> findByClaimedFalse();
     // add query methods (by category, color, etc) if needed\
     List<FoundItem> findByClaimedTrueOrderByFoundAtDesc();
+    long countByUserId(Long userId);
 }
