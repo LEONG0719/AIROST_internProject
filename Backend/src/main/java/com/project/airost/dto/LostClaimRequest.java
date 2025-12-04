@@ -15,6 +15,8 @@ public class LostClaimRequest {
     private String brand;
     private String remarks;
     private String specialMarking;
+    private String location;
+    private String phoneNumber;
 
     // Optional: for Layer 3 verification later
     private String extraProofUrls;

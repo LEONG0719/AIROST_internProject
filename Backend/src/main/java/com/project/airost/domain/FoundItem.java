@@ -37,6 +37,7 @@ public class FoundItem {
 
     private String color;
     private String brand;
+    private String location;
 
     @OneToMany(mappedBy = "foundItem", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<FoundItemImage> images;

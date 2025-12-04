@@ -36,6 +36,8 @@ public class User {
     @Column(nullable = false)
     private Integer points = 0;
 
+    private String phoneNumber;
+
     //for verification
     @Column(name = "is_enabled")
     private boolean enabled = false; // Default is FALSE (cannot login)

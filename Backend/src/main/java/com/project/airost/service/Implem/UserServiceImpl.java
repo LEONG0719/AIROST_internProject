@@ -45,6 +45,7 @@ public class UserServiceImpl implements UserService {
                 .fullName(user.getFullName())
                 .email(user.getEmail())
                 .points(user.getPoints())
+                .phoneNumber(user.getPhoneNumber())
                 .itemsFoundCount(foundCount)
                 .itemsLostCount(lostCount)
                 .itemsMatchedCount(matchedCount)

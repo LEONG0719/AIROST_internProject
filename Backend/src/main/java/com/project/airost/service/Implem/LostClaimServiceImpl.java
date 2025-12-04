@@ -96,12 +96,12 @@ public class LostClaimServiceImpl implements LostClaimService {
         // ============================================================
         double bestTextScore = -1;
         FoundItem bestTextMatch = null;
-        String concatLostText = joinNonNull(saved.getCategory(), saved.getBrand(), saved.getColor(), saved.getSpecialMarking(), saved.getDescription());
+        String concatLostText = joinNonNull(saved.getCategory(), saved.getBrand(), saved.getColor(), saved.getSpecialMarking(),saved.getLocation(), saved.getDescription());
 
         if (concatLostText != null && !concatLostText.isBlank()) {
             List<FoundItem> foundItems = foundItemRepo.findByClaimedFalse();
             for (FoundItem found : foundItems) {
-                String concatFoundText = joinNonNull(found.getCategory(), found.getBrand(), found.getColor(), found.getDescription());
+                String concatFoundText = joinNonNull(found.getCategory(), found.getBrand(), found.getColor(), found.getDescription(), found.getLocation());
                 double score = aiService.compareText(concatLostText, concatFoundText);
                 if (score > bestTextScore) {
                     bestTextScore = score;
