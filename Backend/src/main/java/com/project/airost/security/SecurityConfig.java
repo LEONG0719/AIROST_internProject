@@ -45,8 +45,12 @@ public class SecurityConfig {
 
                         // ============================================================
 
-                        // 3. Admin actions
-                        .requestMatchers("/api/claims/*/admin/").hasRole("ADMIN")
+                        // 3. Admin action
+                        .requestMatchers("/api/found-items/admin/**").hasRole("ADMIN")
+                        .requestMatchers("/api/claims/admin/**").hasRole("ADMIN")
+                        .requestMatchers("/api/claims/*/admin/**").hasRole("ADMIN") // For approve/reject
+
+
 
                         // 4. Everything else needs login
                         .anyRequest().authenticated()
