@@ -25,7 +25,9 @@ public class LostClaimController {
     private final LostClaimRepository claimRepository;
     private final UserRepository userRepository; // ✅ Needed to update phone number
 
-    // 1. Submit Claim (For Users)
+    // ==========================================
+    // 1. SUBMIT CLAIM (For Users)
+    // ==========================================
     @PostMapping(consumes = {"multipart/form-data"})
     public ResponseEntity<LostClaim> submitClaim(
             @RequestPart("data") LostClaimRequest request,
@@ -38,7 +40,6 @@ public class LostClaimController {
         }
 
         // 2. Fetch User & Update Phone Number
-        // We fetch the user FIRST so we can update their phone number if they provided one
         User user = userRepository.findById(request.getUserId())
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
@@ -49,7 +50,7 @@ public class LostClaimController {
 
         // 3. Map DTO -> Entity
         LostClaim claim = new LostClaim();
-        claim.setUser(user); // Set the fetched user object
+        claim.setUser(user);
 
         claim.setImageUrl(request.getImageUrl());
         claim.setDescription(request.getDescription());
@@ -58,8 +59,6 @@ public class LostClaimController {
         claim.setBrand(request.getBrand());
         claim.setRemarks(request.getRemarks());
         claim.setSpecialMarking(request.getSpecialMarking());
-
-        // ✅ MAP LOCATION (This was missing/unreachable in your code)
         claim.setLocation(request.getLocation());
 
         // 4. Submit logic (AI)
@@ -67,7 +66,9 @@ public class LostClaimController {
         return ResponseEntity.ok(saved);
     }
 
-    // 2. Get Claim Details
+    // ==========================================
+    // 2. GET CLAIM DETAILS
+    // ==========================================
     @GetMapping("/{id}")
     public ResponseEntity<LostClaim> getClaim(@PathVariable Long id) {
         return claimRepository.findById(id)
@@ -75,6 +76,9 @@ public class LostClaimController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
+    // ==========================================
+    // 3. UPLOAD PROOF (Scenario 2: Manual Check)
+    // ==========================================
     @PostMapping("/{id}/upload-proof")
     public ResponseEntity<LostClaim> uploadProof(
             @PathVariable Long id,
@@ -98,22 +102,36 @@ public class LostClaimController {
     }
 
     // ==========================================
+    // 4. CONFIRM RETURN (Scenario 1: Claimed)
+    // ==========================================
+    @PostMapping("/{id}/confirm-return")
+    public ResponseEntity<LostClaim> confirmReturn(
+            @PathVariable Long id,
+            @RequestParam Long userId
+    ) {
+        // This triggers the final status update to CLAIMED
+        // AND awards the final 50 points to the finder
+        LostClaim finalizedClaim = claimService.confirmReturn(id, userId);
+        return ResponseEntity.ok(finalizedClaim);
+    }
+
+    // ==========================================
     // 👑 ADMIN ENDPOINTS
     // ==========================================
 
-    // 3. Get ALL Claims
+    // 5. Get ALL Claims
     @GetMapping("/admin/all")
     public List<LostClaim> getAllClaimsForAdmin() {
         return claimRepository.findAll();
     }
 
-    // 4. Get Only "Pending" Claims
+    // 6. Get Only "Pending" Claims
     @GetMapping("/admin/pending")
     public List<LostClaim> getPendingClaims() {
         return claimRepository.findByStatus(LostClaim.ClaimStatus.NEEDS_MANUAL_CHECK);
     }
 
-    // 5. Admin Verify - Approve
+    // 7. Admin Verify - Approve
     @PostMapping("/{id}/admin/approve")
     public ResponseEntity<?> approveClaim(
             @PathVariable Long id,
@@ -124,7 +142,7 @@ public class LostClaimController {
         return ResponseEntity.ok(updated);
     }
 
-    // 6. Admin Verify - Reject
+    // 8. Admin Verify - Reject
     @PostMapping("/{id}/admin/reject")
     public ResponseEntity<?> rejectClaim(
             @PathVariable Long id,
@@ -135,7 +153,7 @@ public class LostClaimController {
         return ResponseEntity.ok(updated);
     }
 
-    // 7. Delete Claim
+    // 9. Delete Claim
     @DeleteMapping("/admin/{id}")
     public ResponseEntity<?> deleteClaim(@PathVariable Long id) {
         if (!claimRepository.existsById(id)) {
