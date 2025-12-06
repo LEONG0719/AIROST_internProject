@@ -221,6 +221,7 @@ import { useRouter } from 'vue-router'
 import { useToast } from 'vue-toastification'
 import DashboardLayout from '../layouts/DashboardLayout.vue'
 import RankingService from '../services/ranking.service'
+import DashboardService from '../services/dashboard.service'
 import AuthService from '../services/auth.service'
 import type { RankingEntry } from '../types/api.types'
 
@@ -288,9 +289,9 @@ const topThree = computed(() => {
     return {
       rank: entry.rank,
       name: entry.fullName,
-      studentId: `User ${entry.userId}`, // You can format this better if you have student ID
-      points: entry.points,
-      itemsFound: entry.itemsFound,
+      studentId: `User ${entry.userId}`,
+      points: entry.points || 0,
+      itemsFound: entry.itemsFound || 0,
       gradient,
       badgeColor,
       avatarText
@@ -304,9 +305,9 @@ const rankingsWithStyle = computed(() => {
     return {
       rank: entry.rank,
       name: entry.fullName,
-      points: entry.points,
+      points: entry.points || 0,
       avatarGradient: entry.userId === currentUserId.value 
-        ? 'from-blue-500 to-blue-700'  // Special color for current user
+        ? 'from-blue-500 to-blue-700'
         : getGradient(index),
       isCurrentUser: entry.userId === currentUserId.value
     }
@@ -327,24 +328,13 @@ const loadLeaderboard = async () => {
     console.log('Fetching leaderboard from /api/user/leaderboard...')
     const rankings = await RankingService.getLeaderboard()
     console.log('Leaderboard received:', rankings)
-    console.log('Number of users:', rankings.length)
-    console.log('First user:', rankings[0])
     
     allRankings.value = rankings
     
-    // Calculate stats from leaderboard
+    // ✅ Set totalUsers from leaderboard (number of active heroes)
     totalUsers.value = rankings.length
-    totalPoints.value = rankings.reduce((sum, entry) => sum + entry.points, 0)
-    totalReturned.value = rankings.reduce((sum, entry) => sum + entry.itemsReturned, 0)
     
-    console.log('Stats calculated:', {
-      totalUsers: totalUsers.value,
-      totalPoints: totalPoints.value,
-      totalReturned: totalReturned.value
-    })
-    
-    console.log('allRankings set to:', allRankings.value)
-    console.log('rankingsWithStyle computed:', rankingsWithStyle.value)
+    console.log('Leaderboard loaded with', rankings.length, 'users')
     
     // If no rankings, show message
     if (rankings.length === 0) {
@@ -355,12 +345,8 @@ const loadLeaderboard = async () => {
   } catch (error: any) {
     console.error('=== ERROR LOADING LEADERBOARD ===')
     console.error('Error:', error)
-    console.error('Error message:', error.message)
-    console.error('Error response:', error.response)
     
     toast.error('Failed to load leaderboard')
-    
-    // Show empty state
     allRankings.value = []
   } finally {
     isLoading.value = false
@@ -372,35 +358,32 @@ const loadLeaderboard = async () => {
 const loadCommunityStats = async () => {
   try {
     console.log('Fetching community stats from /api/user/community-stats...')
-    const response = await fetch('http://localhost:8080/api/user/community-stats')
-    const data = await response.json()
+    
+    // ✅ Use DashboardService instead of fetch
+    const data = await DashboardService.getCommunityStats()
     console.log('Community stats received:', data)
     
-    // Update stats with real data
-    totalReturned.value = data.totalItemsReturned || 0
-    totalUsers.value = data.totalUsers || 0
-    successRate.value = data.successRate || 0
-    totalPoints.value = data.totalPoints || 0
-    
-    console.log('Community stats updated:', {
-      totalReturned: totalReturned.value,
-      totalUsers: totalUsers.value,
-      successRate: successRate.value,
-      totalPoints: totalPoints.value
-    })
+    // ✅ Update ONLY items returned, success rate, and total points
+    // DO NOT update totalUsers - we get that from leaderboard
+    if (data) {
+      totalReturned.value = data.totalItemsReturned || 0
+      successRate.value = data.successRate || 0
+      totalPoints.value = data.totalPoints || 0
+      
+      console.log('Community stats updated:', {
+        totalReturned: totalReturned.value,
+        successRate: successRate.value,
+        totalPoints: totalPoints.value,
+        totalUsers: totalUsers.value  // This stays from leaderboard
+      })
+    }
   } catch (error: any) {
     console.error('Error loading community stats:', error)
-    // Keep default values if error
+    // Calculate fallback from leaderboard
+    if (allRankings.value.length > 0) {
+      totalPoints.value = allRankings.value.reduce((sum, entry) => sum + (entry.points || 0), 0)
+    }
   }
-}
-
-// Get initials from name for avatar
-const getInitials = (name: string): string => {
-  const parts = name.split(' ')
-  if (parts.length >= 2 && parts[0] && parts[1]) {
-    return (parts[0][0] + parts[1][0]).toUpperCase()
-  }
-  return name.substring(0, 2).toUpperCase()
 }
 
 // Load data on mount

@@ -3,11 +3,9 @@ package com.project.airost.controller;
 import com.project.airost.domain.User;
 import com.project.airost.dto.AuthRequest;
 import com.project.airost.dto.AuthResponse;
-import com.project.airost.repository.UserRepository;
 import com.project.airost.security.JwtUtil;
 import com.project.airost.service.AuthService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.repository.query.Param;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -20,9 +18,6 @@ public class AuthController {
     private final AuthService authService;
     private final JwtUtil jwtUtil;
 
-    // NOTE: You don't need UserRepository here anymore because logic moved to Service
-    // but if you used it for quick checks, that's fine. Cleaner to keep it in Service.
-
     // 1. REGISTER
     @PostMapping("/register")
     public ResponseEntity<?> register(@RequestBody AuthRequest request) {
@@ -31,6 +26,10 @@ public class AuthController {
             user.setEmail(request.getEmail());
             user.setPasswordHash(request.getPassword());
             user.setFullName(request.getFullName());
+
+            // ✅ FIX: Set Student ID here
+            user.setStudentId(request.getStudentId());
+
             user.setRole(User.Role.USER); // Default role
 
             authService.registerUser(user);

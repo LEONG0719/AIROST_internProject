@@ -189,6 +189,8 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { useToast } from 'vue-toastification'
+import ClaimService from '../services/claim.service'
+import AuthService from '../services/auth.service'
 
 interface ItemClaimProps {
   show: boolean
@@ -241,28 +243,48 @@ const closeModal = () => {
 }
 
 const handleClaim = async () => {
+  const claimId = props.item.claimId || props.item.id
+  const userId = AuthService.getUserId()
+  
+  if (!claimId) {
+    toast.error('No claim ID found')
+    return
+  }
+  
+  if (!userId) {
+    toast.error('Please login first')
+    return
+  }
+  
   isClaiming.value = true
   
   try {
-    // TODO: Call API to mark item as claimed
-    // await ClaimService.claimItem(props.item.claimId || props.item.id)
+    console.log('=== CLAIMING ITEM ===')
+    console.log('Claim ID:', claimId)
+    console.log('User ID:', userId)
     
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1500))
+    // ✅ Call real API: POST /api/claims/{id}/confirm-return
+    const response = await ClaimService.confirmReturn(claimId, userId)
     
-    toast.success('🎉 Item claimed successfully!')
+    console.log('API Response:', response)
+    
+    toast.success('🎉 Item claimed successfully! You can pick it up at the office.')
     
     // Emit claimed event
-    emit('claimed', props.item)
+    emit('claimed', {
+      ...props.item,
+      status: 'CLAIMED'
+    })
     
     // Close modal after short delay
     setTimeout(() => {
       closeModal()
-    }, 1000)
+    }, 1500)
     
   } catch (error: any) {
     console.error('Error claiming item:', error)
-    toast.error('Failed to claim item. Please try again.')
+    const errorMsg = error.response?.data?.message || 'Failed to claim item'
+    toast.error(errorMsg)
   } finally {
     isClaiming.value = false
   }

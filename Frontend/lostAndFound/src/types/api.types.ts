@@ -2,6 +2,7 @@ export interface AuthRequest {
   email: string
   password: string
   fullName?: string
+  studentId?: string  // ✅ Added matric number field
 }
 
 export interface AuthResponse {
@@ -158,4 +159,31 @@ export interface ApiResponse<T = any> {
   message?: string
   data?: T
   error?: string
+}
+
+export interface User {
+  id: number
+  email: string
+  fullName: string
+  role: 'USER' | 'ADMIN'
+  phoneNumber?: string      // ✅ Added to match backend
+  studentId?: string        // ✅ Added to match backend
+  profilePicture?: string
+  points: number
+  createdAt: string
+  enabled: boolean
+}
+
+export interface UserStats {
+  itemsFound: number
+  itemsLost: number
+  matched: number
+  points: number
+}
+
+// ✅ Matches the Java DTO: UserProfileResponse
+export interface UserProfileResponse {
+  user: User
+  stats: UserStats
+  rank: number
 }

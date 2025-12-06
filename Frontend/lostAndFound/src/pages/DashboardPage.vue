@@ -675,50 +675,7 @@ onMounted(async () => {
     loadRecentActivities()
   ])
   
-  // ✅ TEMPORARY: Add test activities for both scenarios
-  console.log('💡 Adding test activities...')
-  
-  // Test 1: Lost item matched (direct claim)
-  recentActivities.value.unshift({
-    title: '🎉 Your iPhone 13 Pro Found!',
-    description: 'Click to review details and claim your item',
-    time: 'Just now',
-    status: 'Ready to Claim',
-    statusClass: 'bg-green-100 text-green-700 border border-green-300',
-    bgColor: 'bg-gradient-to-br from-green-400 to-emerald-500',
-    iconColor: 'text-white',
-    icon: 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z',
-    type: 'LOST_MATCHED',
-    clickable: true,
-    modalType: 'CLAIM',
-    claimId: 999,
-    category: 'Electronics',
-    color: 'Pacific Blue',
-    imageUrl: 'https://via.placeholder.com/400/0ea5e9/ffffff?text=iPhone+13',
-    returnLocation: 'office',
-    returnDate: '2025-12-10',
-    returnTime: '14:00'
-  })
-  
-  // Test 2: Found item needs verification
-  recentActivities.value.unshift({
-    title: '📄 Laptop Found - Verify Ownership',
-    description: 'Upload your student card to verify and claim',
-    time: '5 min ago',
-    status: 'Verify Ownership',
-    statusClass: 'bg-blue-100 text-blue-700 border border-blue-300',
-    bgColor: 'bg-gradient-to-br from-blue-400 to-indigo-500',
-    iconColor: 'text-white',
-    icon: 'M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z',
-    type: 'FOUND_VERIFY',
-    clickable: true,
-    modalType: 'VERIFY',
-    claimId: 888,
-    category: 'Electronics',
-    color: 'Silver',
-    imageUrl: 'https://via.placeholder.com/400/6366f1/ffffff?text=Laptop'
-  })
-  
-  console.log('✅ Test activities added!')
+  // ✅ All data loaded from real backend API
+  console.log('✅ Dashboard data loaded')
 })
 </script>

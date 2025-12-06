@@ -32,6 +32,16 @@
       >
         Report
       </router-link>
+
+      <!-- Admin Link (Only for Admins) -->
+      <router-link 
+        v-if="isAdmin"
+        to="/admin" 
+        class="hover:text-blue-600 transition"
+        :class="{ 'text-blue-600 font-semibold': isActive('/admin') }"
+      >
+        Admin
+      </router-link>
       
       <router-link 
         to="/profile" 
@@ -77,9 +87,10 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useToast } from "vue-toastification"
+import AuthService from '../../services/auth.service'
 
 const router = useRouter()
 const route = useRoute()
@@ -88,6 +99,9 @@ const toast = useToast()
 const isMobileMenuOpen = ref(false)
 
 const emit = defineEmits(['toggle-mobile-menu'])
+
+// Check if user is admin
+const isAdmin = computed(() => AuthService.isAdmin())
 
 const toggleMenu = () => {
   isMobileMenuOpen.value = !isMobileMenuOpen.value
@@ -99,7 +113,7 @@ const isActive = (path) => {
 }
 
 const handleLogout = () => {
-  localStorage.removeItem("authToken")
+  AuthService.logout()
   toast.success("Logout Successfully!")
   router.push("/login")
 }

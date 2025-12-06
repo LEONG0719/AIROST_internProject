@@ -109,6 +109,17 @@
             required
           />
 
+          <!-- ✅ MATRIC NUMBER (NEW FIELD) -->
+          <label class="text-xs font-semibold text-gray-600">MATRIC NUMBER</label>
+          <input
+            v-model="form.studentId"
+            type="text"
+            placeholder="e.g., A12345678"
+            maxlength="20"
+            class="w-full mb-4 mt-1 p-3 border rounded focus:ring-2 focus:ring-blue-600 bg-white outline-none"
+            required
+          />
+
           <!-- Email -->
           <label class="text-xs font-semibold text-gray-600">EMAIL ADDRESS (UTM Graduate only)</label>
           <input
@@ -195,6 +206,12 @@
             <p class="text-xs font-semibold text-blue-900 mb-2">Requirements:</p>
             <ul class="text-xs text-blue-700 space-y-1">
               <li class="flex items-center gap-2">
+                <svg class="w-3 h-3" :class="form.studentId.length > 0 ? 'text-green-600' : 'text-gray-400'" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                </svg>
+                Valid UTM matric number
+              </li>
+              <li class="flex items-center gap-2">
                 <svg class="w-3 h-3" :class="form.email && !emailError ? 'text-green-600' : 'text-gray-400'" fill="currentColor" viewBox="0 0 20 20">
                   <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
                 </svg>
@@ -268,6 +285,7 @@ const toast = useToast()
 
 const form = ref({
   fullName: '',
+  studentId: '',  // ✅ Added matric number field
   email: '',
   password: '',
   confirmPassword: '',
@@ -312,6 +330,12 @@ const validateEmail = () => {
 }
 
 const handleSignup = async () => {
+  // Validate matric number
+  if (!form.value.studentId || form.value.studentId.trim().length === 0) {
+    toast.error('Please enter your matric number')
+    return
+  }
+  
   // Validate email domain first
   validateEmail()
   if (emailError.value) {
@@ -340,9 +364,10 @@ const handleSignup = async () => {
   isLoading.value = true
   
   try {
-    // Real API call to backend
+    // ✅ Real API call to backend with studentId
     await AuthService.register({
       fullName: form.value.fullName,
+      studentId: form.value.studentId,  // ✅ Include studentId
       email: form.value.email,
       password: form.value.password
     })

@@ -31,24 +31,37 @@ public class JwtFilter extends OncePerRequestFilter {
         String email = null;
         String jwt = null;
 
+        // DEBUG LOG 1
+        System.out.println("JwtFilter: Processing request " + request.getRequestURI());
+
         if (authHeader != null && authHeader.startsWith("Bearer ")) {
             jwt = authHeader.substring(7);
             try {
                 email = jwtUtil.extractUsername(jwt);
+                // DEBUG LOG 2
+                System.out.println("JwtFilter: Token found. Email: " + email);
             } catch (Exception e) {
-                System.out.println("JWT Token invalid or expired");
+                System.out.println("JwtFilter: Error extracting username: " + e.getMessage());
             }
+        } else {
+            // DEBUG LOG 3
+            System.out.println("JwtFilter: No valid Authorization header found");
         }
 
         if (email != null && SecurityContextHolder.getContext().getAuthentication() == null) {
             if (jwtUtil.validateToken(jwt, email)) {
                 String role = jwtUtil.extractRole(jwt);
 
+                // DEBUG LOG 4
+                System.out.println("JwtFilter: Token Valid. Role: " + role);
+
                 UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
                         email, null, Collections.singletonList(new SimpleGrantedAuthority("ROLE_" + role)));
 
                 authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                 SecurityContextHolder.getContext().setAuthentication(authToken);
+            } else {
+                System.out.println("JwtFilter: Token validation failed");
             }
         }
         chain.doFilter(request, response);

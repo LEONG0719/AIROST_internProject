@@ -7,6 +7,7 @@ import ReportSelectionPage from '../pages/ReportSelectionPage.vue'
 import RankingPage from '../pages/RankingPage.vue'
 import ProfilePage from '../pages/ProfilePage.vue'
 import SignUpPage from '../pages/SignUpPage.vue'
+import AdminPage from '../pages/AdminPage.vue'
 
 const routes: RouteRecordRaw[] = [
   { path: '/', redirect: '/login' },
@@ -17,7 +18,8 @@ const routes: RouteRecordRaw[] = [
   { path: '/report/found' ,name: 'ReportFound' ,component: FoundItemsPage },
   { path: '/report/lost' , name: 'ReportLost' , component: LostItemsPage},
   { path: '/ranking' , name: 'Ranking' , component: RankingPage},
-  { path: '/profile' , name: 'Profile' , component: ProfilePage}
+  { path: '/profile' , name: 'Profile' , component: ProfilePage},
+   { path: '/admin' , name: 'Admin' , component: AdminPage}
 ]
 
 const router = createRouter({

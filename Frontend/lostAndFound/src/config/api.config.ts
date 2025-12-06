@@ -14,7 +14,7 @@ export const API_CONFIG = {
     // Dashboard endpoints
     DASHBOARD: {
       RECENT_ACTIVITY: '/api/dashboard/recent-activity',
-      STATS: (userId: number) => `/api/dashboard/stats/${userId}`, // To be implemented by backend
+      STATS: (userId: number) => `/api/dashboard/stats/${userId}`,
     },
     
     // Found Items endpoints
@@ -27,25 +27,27 @@ export const API_CONFIG = {
     
     // Lost Claims endpoints
     CLAIMS: {
-      SUBMIT: '/api/claims',         // Same as CREATE - for submitting claims
-      CREATE: '/api/claims',         // Keep for backwards compatibility
+      SUBMIT: '/api/claims',
+      CREATE: '/api/claims',
       PENDING: '/api/claims/pending-verification',
-      DETAIL: (id: number) => `/api/claims/${id}`,  // Get claim by ID
+      DETAIL: (id: number) => `/api/claims/${id}`,
       APPROVE: (id: number) => `/api/claims/${id}/admin/approve`,
       REJECT: (id: number) => `/api/claims/${id}/admin/reject`,
     },
     
-    // User endpoints (to be implemented by backend)
+    // ✅ USERS ENDPOINTS (Updated)
     USERS: {
-      PROFILE: (id: number) => `/api/users/${id}`,
-      UPDATE: (id: number) => `/api/users/${id}`,
+      // Maps to UserController.getProfile()
+      PROFILE: '/api/user/profile',
+      
+      // Kept these just in case you need them later, though unused for now
       STATS: (id: number) => `/api/users/${id}/stats`,
     },
     
-    // Rankings endpoints (to be implemented by backend)
+    // Rankings endpoints
     RANKINGS: {
-      LIST: '/api/rankings',
-      MY_RANK: (userId: number) => `/api/rankings/me/${userId}`,
+      LIST: '/api/user/leaderboard',         // Updated to match UserController
+      COMMUNITY: '/api/user/community-stats' // Updated to match UserController
     },
   },
   

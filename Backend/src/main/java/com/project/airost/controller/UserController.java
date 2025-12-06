@@ -34,6 +34,7 @@ public class UserController {
 
     }
 
+
     @GetMapping("/leaderboard")
     public ResponseEntity<List<LeaderboardEntry>> getLeaderboard() {
         return ResponseEntity.ok(userService.getLeaderboard());

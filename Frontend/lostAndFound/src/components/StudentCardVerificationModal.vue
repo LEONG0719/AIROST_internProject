@@ -72,6 +72,16 @@
                     <span class="text-blue-700 font-bold text-sm">1</span>
                   </div>
                   <div class="flex-1">
+                    <div class="font-semibold text-gray-900">Enter Student ID</div>
+                    <div class="text-sm text-gray-600">Provide your UTM student ID number</div>
+                  </div>
+                </div>
+
+                <div class="flex items-start gap-3">
+                  <div class="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <span class="text-purple-700 font-bold text-sm">2</span>
+                  </div>
+                  <div class="flex-1">
                     <div class="font-semibold text-gray-900">Upload Student Card (PDF)</div>
                     <div class="text-sm text-gray-600">Upload your UTM student ID card as PDF for verification</div>
                   </div>
@@ -79,7 +89,7 @@
 
                 <div class="flex items-start gap-3">
                   <div class="w-8 h-8 bg-orange-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-                    <span class="text-orange-700 font-bold text-sm">2</span>
+                    <span class="text-orange-700 font-bold text-sm">3</span>
                   </div>
                   <div class="flex-1">
                     <div class="font-semibold text-gray-900">Admin Review</div>
@@ -89,7 +99,7 @@
 
                 <div class="flex items-start gap-3">
                   <div class="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-                    <span class="text-green-700 font-bold text-sm">3</span>
+                    <span class="text-green-700 font-bold text-sm">4</span>
                   </div>
                   <div class="flex-1">
                     <div class="font-semibold text-gray-900">Get Notification</div>
@@ -97,6 +107,21 @@
                   </div>
                 </div>
               </div>
+            </div>
+
+            <!-- Student ID Number Input -->
+            <div class="mb-6">
+              <label class="block text-sm font-semibold text-gray-700 mb-2">
+                Student ID Number <span class="text-red-500">*</span>
+              </label>
+              <input
+                v-model="studentIdNumber"
+                type="text"
+                placeholder="e.g., A12345678"
+                class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
+                required
+              />
+              <p class="text-xs text-gray-500 mt-2">Enter your UTM student ID number</p>
             </div>
 
             <!-- File Upload Section - Student Card -->
@@ -284,6 +309,8 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useToast } from 'vue-toastification'
+import ClaimService from '../services/claim.service'
+import AuthService from '../services/auth.service'
 
 interface VerificationModalProps {
   show: boolean
@@ -309,6 +336,7 @@ const selectedReceipt = ref<File | null>(null)
 const isDragging = ref(false)
 const isReceiptDragging = ref(false)
 const isUploading = ref(false)
+const studentIdNumber = ref('')
 
 const handleFileSelect = (event: Event) => {
   const target = event.target as HTMLInputElement
@@ -413,33 +441,49 @@ const closeModal = () => {
 }
 
 const handleSubmit = async () => {
+  // Validation
+  if (!studentIdNumber.value || studentIdNumber.value.trim() === '') {
+    toast.error('Please enter your student ID number')
+    return
+  }
+  
   if (!selectedFile.value) {
-    toast.error('Please select your student card first')
+    toast.error('Please upload your student card PDF')
+    return
+  }
+  
+  const claimId = props.item.claimId || props.item.id
+  if (!claimId) {
+    toast.error('No claim ID found')
     return
   }
   
   isUploading.value = true
   
   try {
-    // TODO: Call API to upload student card and optional receipt
-    // const formData = new FormData()
-    // formData.append('studentCard', selectedFile.value)
-    // formData.append('claimId', props.item.claimId)
-    // if (selectedReceipt.value) {
-    //   formData.append('receipt', selectedReceipt.value)
-    // }
-    // await VerificationService.submitVerification(formData)
+    console.log('=== UPLOADING VERIFICATION ===')
+    console.log('Claim ID:', claimId)
+    console.log('Student ID:', studentIdNumber.value)
+    console.log('Student Card:', selectedFile.value.name)
+    console.log('Receipt:', selectedReceipt.value?.name || 'None')
     
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 2000))
+    // ✅ Call real API: POST /api/claims/{id}/upload-proof
+    const response = await ClaimService.uploadProof(
+      claimId,
+      studentIdNumber.value.trim(),
+      selectedFile.value,
+      selectedReceipt.value || undefined
+    )
+    
+    console.log('API Response:', response)
     
     const hasReceipt = selectedReceipt.value ? ' and receipt' : ''
-    toast.success(`✅ Verification${hasReceipt} submitted! Please wait for admin approval.`)
+    toast.success(`✅ Verification${hasReceipt} submitted! Wait for admin approval.`)
     
     // Emit submitted event
     emit('submitted', {
       ...props.item,
-      status: 'PENDING_VERIFICATION',
+      status: 'NEEDS_MANUAL_CHECK',  // Backend status
       hasReceipt: !!selectedReceipt.value
     })
     
@@ -450,7 +494,8 @@ const handleSubmit = async () => {
     
   } catch (error: any) {
     console.error('Error submitting verification:', error)
-    toast.error('Failed to submit verification. Please try again.')
+    const errorMsg = error.response?.data?.message || 'Failed to submit verification'
+    toast.error(errorMsg)
   } finally {
     isUploading.value = false
   }

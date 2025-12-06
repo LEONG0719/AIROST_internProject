@@ -54,17 +54,15 @@ export class FoundItemService {
       formData.append('location', data.location)
     }
     
-    // ✅ NEW: Add return location fields
-    if (data.returnLocation) {
-      formData.append('returnLocation', data.returnLocation)
-    }
-    
-    if (data.returnDate) {
-      formData.append('returnDate', data.returnDate)
-    }
-    
-    if (data.returnTime) {
-      formData.append('returnTime', data.returnTime)
+    // ✅ Convert returnDate + returnTime to dropOffTime (ISO 8601 format)
+    if (data.returnDate && data.returnTime) {
+      // Combine date and time into ISO format: 2025-12-10T14:00:00
+      const dropOffTime = `${data.returnDate}T${data.returnTime}:00`
+      formData.append('dropOffTime', dropOffTime)
+    } else {
+      // If returnLocation is 'office', use current time
+      const now = new Date().toISOString()
+      formData.append('dropOffTime', now)
     }
     
     // Add image file if provided
