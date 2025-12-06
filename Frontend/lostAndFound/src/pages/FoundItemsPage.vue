@@ -140,56 +140,145 @@
                 @preview-update="handlePreviewUpdate"
             />
 
-            <!-- Current Item Location -->
-            <div class="mb-8">
-            <label class="block text-sm font-semibold text-gray-700 mb-2">
-                Where is the item now? <span class="text-red-500">*</span>
-            </label>
-            <div class="space-y-3">
-                <label class="flex items-center gap-3 p-4 border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50 transition"
-                :class="{ 'border-blue-500 bg-blue-50': form.itemCurrentLocation === 'with_me' }">
-                <input
-                    v-model="form.itemCurrentLocation"
+ <!-- Return Location & Schedule -->
+            <div class="mb-8 bg-gradient-to-br from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-2xl p-6">
+              <h3 class="text-lg font-bold text-blue-900 mb-2 flex items-center gap-2">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
+                </svg>
+                Return Location & Pickup Schedule
+              </h3>
+              <p class="text-sm text-blue-800 mb-6">Let the owner know where and when they can collect their item</p>
+
+              <!-- Return Location Options -->
+              <div class="space-y-3 mb-6">
+                <!-- Option 1: Already at UTM Lost & Found Office -->
+                <label class="flex items-start gap-3 p-5 bg-white border-2 border-blue-200 rounded-xl cursor-pointer hover:shadow-md transition"
+                  :class="{ 'border-blue-600 bg-blue-50 shadow-md': form.returnLocation === 'office' }">
+                  <input
+                    v-model="form.returnLocation"
                     type="radio"
-                    value="with_me"
-                    class="w-4 h-4 text-blue-600"
+                    value="office"
+                    class="mt-1 w-5 h-5 text-blue-600"
                     required
-                />
-                <div>
-                    <div class="font-medium text-gray-900">I have the item with me</div>
-                    <div class="text-sm text-gray-500">You're keeping the item safe</div>
-                </div>
+                  />
+                  <div class="flex-1">
+                    <div class="font-bold text-gray-900 mb-1 text-lg">✅ Item Already at UTM Lost & Found Office</div>
+                    <div class="text-sm text-gray-700 mb-3">
+                      The item is already kept at the official Lost & Found office
+                    </div>
+                    <div class="bg-blue-100 rounded-lg p-3 space-y-2">
+                      <div class="flex items-center gap-2 text-sm text-blue-900">
+                        <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
+                        </svg>
+                        <span class="font-semibold">Faculty of Computing (FC), N28 Building</span>
+                      </div>
+                      <div class="flex items-center gap-2 text-sm text-blue-800">
+                        <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                        <span>Office Hours: Monday - Friday, 9:00 AM - 5:00 PM</span>
+                      </div>
+                      <div class="text-xs text-blue-700 mt-2">
+                        ℹ️ Owner can pick up during office hours
+                      </div>
+                    </div>
+                  </div>
                 </label>
-                
-                <label class="flex items-center gap-3 p-4 border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50 transition"
-                :class="{ 'border-blue-500 bg-blue-50': form.itemCurrentLocation === 'other_place' }">
-                <input
-                    v-model="form.itemCurrentLocation"
+
+                <!-- Option 2: Will Return to Office Later -->
+                <label class="flex items-start gap-3 p-5 bg-white border-2 border-blue-200 rounded-xl cursor-pointer hover:shadow-md transition"
+                  :class="{ 'border-blue-600 bg-blue-50 shadow-md': form.returnLocation === 'personal' }">
+                  <input
+                    v-model="form.returnLocation"
                     type="radio"
-                    value="other_place"
-                    class="w-4 h-4 text-blue-600"
+                    value="personal"
+                    class="mt-1 w-5 h-5 text-blue-600"
                     required
-                />
-                <div class="flex-1">
-                    <div class="font-medium text-gray-900">At another location</div>
-                    <div class="text-sm text-gray-500">Item is kept somewhere else</div>
-                </div>
+                  />
+                  <div class="flex-1">
+                    <div class="font-bold text-gray-900 mb-1 text-lg">🤝 I'll Bring It to Office Later</div>
+                    <div class="text-sm text-gray-700">
+                      You have the item now and will bring it to the office on a specific date
+                    </div>
+                  </div>
                 </label>
-                
-                <!-- Text box for specifying other location -->
-                <transition name="expand">
-                <div v-if="form.itemCurrentLocation === 'other_place'" class="ml-7 mt-2">
+              </div>
+
+              <!-- Date & Time Selection - ONLY for "personal" (will bring later) -->
+              <div v-if="form.returnLocation === 'personal'" class="bg-white rounded-xl p-5 border-2 border-blue-200 shadow-sm">
+                <label class="block text-base font-bold text-gray-900 mb-4 flex items-center gap-2">
+                  <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                  </svg>
+                  When will you bring the item to the office? <span class="text-red-500">*</span>
+                </label>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">📅 Date</label>
                     <input
-                    v-model="form.itemStorageLocation"
-                    type="text"
-                    placeholder="Please specify where the item is kept (e.g., Security office, Friend's room, Cafeteria counter)..."
-                    class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition text-sm"
-                    required
+                      v-model="form.returnDate"
+                      type="date"
+                      :min="today"
+                      class="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition text-base"
+                      required
                     />
+                  </div>
+                  <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">⏰ Time</label>
+                    <input
+                      v-model="form.returnTime"
+                      type="time"
+                      class="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition text-base"
+                      required
+                    />
+                  </div>
                 </div>
-                </transition>
+                <p class="text-xs text-gray-600 mt-3 flex items-center gap-1">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                  </svg>
+                  After you bring it to the office, the owner will be notified
+                </p>
+              </div>
+
+              <!-- Map Section - Show for BOTH options -->
+              <div v-if="form.returnLocation" class="mt-6">
+                <div class="bg-white rounded-xl p-5 border-2 border-blue-200 shadow-sm">
+                  <h4 class="text-base font-bold text-gray-900 mb-3 flex items-center gap-2">
+                    <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"/>
+                    </svg>
+                    UTM Lost & Found Office Location - FC N28
+                  </h4>
+                  <div class="rounded-lg overflow-hidden border-2 border-gray-200 shadow-sm">
+                    <!-- Embedded Google Maps for FC UTM -->
+                    <iframe
+                      src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3988.394997842935!2d103.63669!3d1.55787!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x31da7713bbf8e80b%3A0x4e1a0a19dd15c04d!2sFaculty%20of%20Computing%2C%20Universiti%20Teknologi%20Malaysia!5e0!3m2!1sen!2smy!4v1234567890"
+                      width="100%"
+                      height="300"
+                      style="border:0;"
+                      allowfullscreen
+                      loading="lazy"
+                      referrerpolicy="no-referrer-when-downgrade"
+                    ></iframe>
+                  </div>
+                  <div class="mt-3 p-3 bg-blue-50 rounded-lg">
+                    <p class="text-sm text-blue-900 font-semibold mb-1">📍 Full Address:</p>
+                    <p class="text-sm text-blue-800">
+                      Faculty of Computing, N28 Building<br>
+                      Universiti Teknologi Malaysia<br>
+                      81310 Johor Bahru, Johor, Malaysia
+                    </p>
+                  </div>
+                </div>
+              </div>
             </div>
-            </div>
+
+
 
             <!-- Submit Buttons -->
             <div class="flex flex-col sm:flex-row gap-4">
@@ -230,21 +319,39 @@
 
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
-import { useToast } from 'vue-toastification'
+import { useToast } from "vue-toastification"  
 import DashboardLayout from '../layouts/DashboardLayout.vue'
-import ImageUpload from '../components/form/ImageUpload.vue'
-import LocationSelect from '../components/form/LocationSelect.vue'
 import InstructionCard from '../components/ui/InstructionCard.vue'
-import FoundItemService from '../services/founditem.service'
+import ImageUpload from '../components/form/ImageUpload.vue'
+import AIMatchingInfo from '../components/ui/AIMatchingInfo.vue'
+import LocationSelect from '../components/form/LocationSelect.vue'
 import AuthService from '../services/auth.service'
-import type { FoundItemRequest } from '../types/api.types'
+import FoundItemService from '../services/founditem.service'
 
 const router = useRouter()
 const toast = useToast()
 
-const form = ref({
+interface FormData {
+  itemName: string
+  category: string
+  otherCategory: string
+  brand: string
+  color: string
+  marking: string
+  description: string
+  location: string
+  otherLocation: string
+  // ❌ REMOVED: itemCurrentLocation and itemStorageLocation
+  // ✅ NEW: Return location fields
+  returnLocation: string     // 'office' or 'personal'
+  returnDate: string         // 'YYYY-MM-DD'
+  returnTime: string         // 'HH:MM'
+  image: File | null
+}
+
+const form = ref<FormData>({
   itemName: '',
   category: '',
   otherCategory: '',
@@ -254,84 +361,33 @@ const form = ref({
   description: '',
   location: '',
   otherLocation: '',
-  itemCurrentLocation: '',
-  itemStorageLocation: '',
-  image: null as File | null
+  // ✅ NEW fields
+  returnLocation: '',
+  returnDate: '',
+  returnTime: '',
+  image: null
 })
 
 const imagePreview = ref<string | null>(null)
 const isSubmitting = ref(false)
 const locationKey = ref(0)
 const imageKey = ref(0)
+const fileInputRef = ref<any>(null)
 
-const handleImageSelected = (file: File | null) => {
-  form.value.image = file
-  
-  if (file) {
-    const reader = new FileReader()
-    reader.onload = (e) => {
-      imagePreview.value = e.target?.result as string
-    }
-    reader.readAsDataURL(file)
-  } else {
-    imagePreview.value = null
-  }
-}
+// ✅ NEW: Computed property for today's date (min date for picker)
+const today = computed(() => {
+  const date = new Date()
+  return date.toISOString().split('T')[0]
+})
 
 const handlePreviewUpdate = (preview: string | null) => {
   imagePreview.value = preview
 }
 
-const handleLocationSelected = (location: string) => {
-  form.value.location = location
-}
-
-const validateForm = (): boolean => {
-  // Check required fields
-  if (!form.value.itemName.trim()) {
-    toast.error('Please enter the item name')
-    return false
-  }
-
-  if (!form.value.category) {
-    toast.error('Please select a category')
-    return false
-  }
-
-  if (form.value.category === 'Others' && !form.value.otherCategory.trim()) {
-    toast.error('Please specify the category')
-    return false
-  }
-
-  if (!form.value.color.trim()) {
-    toast.error('Please enter the color')
-    return false
-  }
-
-  if (!form.value.description.trim()) {
-    toast.error('Please enter a description')
-    return false
-  }
-
-  if (!form.value.location) {
-    toast.error('Please select where you found the item')
-    return false
-  }
-
-  if (form.value.location === 'Others' && !form.value.otherLocation.trim()) {
-    toast.error('Please specify the location')
-    return false
-  }
-
-  if (!form.value.itemCurrentLocation.trim()) {
-    toast.error('Please specify the current location of the item')
-    return false
-  }
-
-  return true
-}
-
 const handleSubmit = async () => {
+  console.log('=== SUBMIT STARTED ===')
+  console.log('Form data:', form.value)
+
   // Check if user is logged in
   if (!AuthService.isAuthenticated()) {
     toast.error('Please login first')
@@ -339,68 +395,147 @@ const handleSubmit = async () => {
     return
   }
 
-  // Validate form
-  if (!validateForm()) {
+  // Validate required fields
+  if (!form.value.itemName) {
+    toast.error('Please enter the item name')
+    return
+  }
+
+  if (!form.value.category) {
+    toast.error('Please select a category')
+    return
+  }
+
+  if (form.value.category === 'Others' && !form.value.otherCategory) {
+    toast.error('Please specify the category')
+    return
+  }
+
+  if (!form.value.color) {
+    toast.error('Please enter the color')
+    return
+  }
+
+  if (!form.value.description) {
+    toast.error('Please enter a description')
+    return
+  }
+
+  if (!form.value.location) {
+    toast.error('Please select where you found the item')
+    return
+  }
+
+  if (form.value.location === 'Others' && !form.value.otherLocation) {
+    toast.error('Please specify where you found the item')
+    return
+  }
+
+  // ✅ NEW: Validate return location
+  if (!form.value.returnLocation) {
+    toast.error('Please select where the item is (At office or Will bring later)')
+    return
+  }
+
+  // ✅ NEW: Validate return date/time ONLY if "personal" (will bring later)
+  if (form.value.returnLocation === 'personal') {
+    if (!form.value.returnDate) {
+      toast.error('Please select when you will bring the item to office')
+      return
+    }
+    
+    if (!form.value.returnTime) {
+      toast.error('Please select what time you will bring the item')
+      return
+    }
+  }
+
+  if (!form.value.image) {
+    toast.warning('Please upload an image of the found item')
     return
   }
 
   isSubmitting.value = true
 
   try {
-    // Prepare data for API
-    const finalCategory = form.value.category === 'Others' 
-      ? form.value.otherCategory 
+    const userId = AuthService.getUserId()
+    if (!userId) {
+      toast.error('Please login first')
+      router.push('/login')
+      return
+    }
+
+    // Build final category and location
+    const finalCategory = form.value.category === 'Others'
+      ? form.value.otherCategory
       : form.value.category
 
     const finalLocation = form.value.location === 'Others'
       ? form.value.otherLocation
       : form.value.location
 
-    // Build description with all details
+    // ✅ NEW: Build return info based on location
+    let returnInfo = ''
+    let returnDateTime = ''
+    
+    if (form.value.returnLocation === 'office') {
+      // Item already at office
+      returnInfo = '✅ Item is at: UTM Lost & Found Office (FC N28)\n📍 Owner can pick up during office hours: Mon-Fri, 9AM-5PM'
+    } else if (form.value.returnLocation === 'personal') {
+      // Will bring to office later
+      returnDateTime = `${form.value.returnDate} at ${form.value.returnTime}`
+      returnInfo = `🤝 Item will be brought to office on: ${returnDateTime}\n📍 Office: UTM Lost & Found (FC N28)`
+    }
+
+    // ✅ NEW: Build full description with all info
     const fullDescription = `
 ${form.value.description}
 
-Found at: ${finalLocation}
-Current Location: ${form.value.itemCurrentLocation}
-${form.value.itemStorageLocation ? `Storage Location: ${form.value.itemStorageLocation}` : ''}
+📍 Found at: ${finalLocation}
+${returnInfo}
     `.trim()
 
-    const requestData: FoundItemRequest = {
+    console.log('Full description:', fullDescription)
+
+    // Build request object
+    const requestData = {
+      userId: userId,
       title: form.value.itemName,
       description: fullDescription,
       category: finalCategory,
       color: form.value.color,
-      brand: form.value.brand || 'Unknown',
-      specialMarking: form.value.marking || undefined
+      brand: form.value.brand || '',
+      specialMarking: form.value.marking || '',
+      location: finalLocation,
+      // ✅ NEW: Add return fields
+      returnLocation: form.value.returnLocation,
+      returnDate: form.value.returnDate,
+      returnTime: form.value.returnTime,
     }
 
-    // Submit to backend with image
-    const result = await FoundItemService.reportFoundItem(
-      requestData,
-      form.value.image || undefined
-    )
+    console.log('Request data:', requestData)
 
-    console.log('Item reported successfully:', result)
-    
-    toast.success('Found item reported successfully! Our AI will check for matches.')
-    
+    // Get image file
+    const imageFile = form.value.image || undefined
+
+    console.log('Calling API...')
+    const response = await FoundItemService.reportFoundItem(requestData, imageFile)
+    console.log('API response:', response)
+
+    // Success
+    toast.success('Found item reported successfully! Our AI will start matching.')
+
     // Reset form
     resetForm()
-    
+
     // Redirect to dashboard after 2 seconds
     setTimeout(() => {
       router.push('/dashboard')
     }, 2000)
-    
+
   } catch (error: any) {
-    console.error('Error submitting form:', error)
-    
-    // Show specific error message if available
-    if (error.message) {
-      toast.error(error.message)
-    } else {
-      toast.error('Failed to submit report. Please try again.')
-    }
+    console.error('Submit error:', error)
+    toast.error(error.response?.data?.message || 'Failed to submit report. Please try again.')
   } finally {
     isSubmitting.value = false
   }
@@ -417,12 +552,55 @@ const resetForm = () => {
     description: '',
     location: '',
     otherLocation: '',
-    itemCurrentLocation: '',
-    itemStorageLocation: '',
+    // ✅ NEW fields
+    returnLocation: '',
+    returnDate: '',
+    returnTime: '',
     image: null
   }
   imagePreview.value = null
   locationKey.value++
   imageKey.value++
+  
+  // Clear file input preview if component ref exists
+  if (fileInputRef.value) {
+    fileInputRef.value.clearPreview()
+  }
 }
 </script>
+
+<style scoped>
+/* Custom scrollbar */
+textarea::-webkit-scrollbar {
+  width: 8px;
+}
+
+textarea::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+textarea::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 4px;
+}
+
+textarea::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}
+
+/* Expand animation */
+.expand-enter-active,
+.expand-leave-active {
+  transition: all 0.3s ease;
+  max-height: 200px;
+  overflow: hidden;
+}
+
+.expand-enter-from,
+.expand-leave-to {
+  opacity: 0;
+  max-height: 0;
+  margin-top: 0;
+}
+</style>

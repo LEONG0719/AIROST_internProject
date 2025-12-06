@@ -126,35 +126,88 @@
               </div>
             </div>
 
-            <!-- Recent Activity -->
+ <!-- Recent Activity -->
             <div class="bg-white rounded-2xl shadow-lg p-6">
-              <div class="flex items-center justify-between mb-4">
+              <div class="mb-4">
                 <h2 class="text-xl font-bold text-gray-900">Recent Activity</h2>
-                <button class="text-sm text-blue-600 hover:text-blue-700 font-semibold">View All</button>
+                <p class="text-sm text-gray-500 mt-1">Your latest found and lost item reports</p>
               </div>
               
-              <div class="space-y-4">
+              <div v-if="isLoadingActivities" class="flex justify-center py-8">
+                <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+              </div>
+
+              <div v-else-if="recentActivities.length === 0" class="text-center py-8">
+                <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"/>
+                  </svg>
+                </div>
+                <p class="text-gray-600 font-medium">No recent activities</p>
+                <p class="text-sm text-gray-500 mt-1">Start by reporting a found or lost item!</p>
+              </div>
+              
+              <div v-else class="space-y-3">
                 <div 
                   v-for="(activity, index) in recentActivities" 
                   :key="index"
-                  class="flex items-start gap-4 pb-4 border-b last:border-b-0 hover:bg-gray-50 p-3 rounded-lg transition cursor-pointer"
+                  @click="handleActivityClick(activity)"
+                  class="flex items-start gap-4 p-4 rounded-xl transition"
+                  :class="[
+                    activity.clickable 
+                      ? 'hover:bg-gradient-to-r hover:from-green-50 hover:to-emerald-50 cursor-pointer border-2 border-green-200 bg-green-50' 
+                      : 'hover:bg-gray-50 border border-gray-200',
+                    'relative'
+                  ]"
                 >
+                  <!-- Icon -->
                   <div class="flex-shrink-0 w-12 h-12 rounded-full flex items-center justify-center"
                     :class="activity.bgColor">
                     <svg class="w-6 h-6" :class="activity.iconColor" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" :d="activity.icon"/>
                     </svg>
                   </div>
+
+                  <!-- Content -->
                   <div class="flex-1 min-w-0">
-                    <p class="font-medium text-gray-900">{{ activity.title }}</p>
-                    <p class="text-sm text-gray-600 mt-1">{{ activity.description }}</p>
-                    <p class="text-xs text-gray-400 mt-1">{{ activity.time }}</p>
+                    <div class="flex items-start justify-between gap-2">
+                      <p class="font-semibold text-gray-900 flex items-center gap-2">
+                        {{ activity.title }}
+                        <!-- Matched badge -->
+                        <span v-if="activity.type === 'MATCHED'" class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold bg-green-500 text-white animate-pulse">
+                          ✨ NEW
+                        </span>
+                      </p>
+                      <span 
+                        class="flex-shrink-0 px-2.5 py-1 text-xs font-bold rounded-full"
+                        :class="activity.statusClass">
+                        {{ activity.status }}
+                      </span>
+                    </div>
+                    <p class="text-sm text-gray-600 mt-1.5">{{ activity.description }}</p>
+                    <div class="flex items-center gap-3 mt-2">
+                      <p class="text-xs text-gray-500 flex items-center gap-1">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                        {{ activity.time }}
+                      </p>
+                      <!-- Click to claim indicator for matched items -->
+                      <p v-if="activity.clickable" class="text-xs font-semibold text-green-600 flex items-center gap-1">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5M7.188 2.239l.777 2.897M5.136 7.965l-2.898-.777M13.95 4.05l-2.122 2.122m-5.657 5.656l-2.12 2.122"/>
+                        </svg>
+                        Click to claim item
+                      </p>
+                    </div>
                   </div>
-                  <span 
-                    class="flex-shrink-0 px-2 py-1 text-xs font-semibold rounded-full"
-                    :class="activity.statusClass">
-                    {{ activity.status }}
-                  </span>
+
+                  <!-- Arrow indicator for clickable items -->
+                  <div v-if="activity.clickable" class="flex-shrink-0">
+                    <svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                    </svg>
+                  </div>
                 </div>
               </div>
             </div>
@@ -244,6 +297,20 @@
 
       </div>
     </div>
+    <!-- Item Claim Modal -->
+    <ItemClaimModal
+      :show="showClaimModal"
+      :item="selectedItem || {}"
+      @close="closeClaimModal"
+      @claimed="handleItemClaimed"
+    />
+
+    <StudentCardVerificationModal
+      :show="showVerificationModal"
+      :item="selectedItem || {}"
+      @close="closeVerificationModal"
+      @submitted="handleVerificationSubmitted"
+    />
   </DashboardLayout>
 </template>
 
@@ -254,7 +321,9 @@ import { useToast } from 'vue-toastification'
 import AuthService from '../services/auth.service'
 import DashboardService from '../services/dashboard.service'
 import DashboardLayout from '../layouts/DashboardLayout.vue'
-import type { ActivityFeed, DashboardStats, CommunityStats } from '../types/api.types'
+import ItemClaimModal from '../components/ItemClaimModal.vue'
+import StudentCardVerificationModal from '../components/StudentCardVerificationModal.vue'
+import type { DashboardStats, CommunityStats } from '../types/api.types'
 
 const router = useRouter()
 const toast = useToast()
@@ -294,6 +363,11 @@ const isLoadingActivities = ref(false)
 const isLoadingStats = ref(false)
 const isLoadingProfile = ref(false)
 
+// ✅ TWO MODALS: Claim Modal & Verification Modal
+const showClaimModal = ref(false)                    // For LOST items (direct claim)
+const showVerificationModal = ref(false)             // For FOUND items (need verification)
+const selectedItem = ref<any>(null)
+
 // Fetch user profile
 const loadUserProfile = async () => {
   isLoadingProfile.value = true
@@ -301,18 +375,12 @@ const loadUserProfile = async () => {
     const profile = await DashboardService.getUserProfile()
     console.log('=== PROFILE RESPONSE ===')
     console.log('Full profile object:', profile)
-    console.log('itemsFoundCount:', profile.itemsFoundCount)
-    console.log('itemsLostCount:', profile.itemsLostCount)
-    console.log('itemsMatchedCount:', profile.itemsMatchedCount)
-    console.log('globalRank:', profile.globalRank)
-    console.log('points:', profile.points)
-    console.log('========================')
     
     userName.value = profile.fullName || 'Student'
-    userRank.value = profile.globalRank || 0  // ✅ Added: Set user rank
-    totalUsers.value = profile.totalUsers || 0  // ✅ Added: Set total users from profile
+    userRank.value = profile.globalRank || 0
+    totalUsers.value = profile.totalUsers || 0
     
-    // ✅ FIXED: Use correct field names from backend
+    // Use correct field names from backend
     stats.value = {
       itemsFound: profile.itemsFoundCount || 0,
       itemsLost: profile.itemsLostCount || 0,
@@ -320,23 +388,14 @@ const loadUserProfile = async () => {
       points: profile.points || 0
     }
     
-    // ✅ Calculate total items in database (estimate based on user's items * total users)
+    // Calculate total items in database
     const itemsFoundCount = profile.itemsFoundCount || 0
     const itemsLostCount = profile.itemsLostCount || 0
     const totalUsersCount = profile.totalUsers || 1
     const userTotalItems = itemsFoundCount + itemsLostCount
     const estimatedTotalItems = userTotalItems * totalUsersCount
-    aiStats.value.totalItems = estimatedTotalItems || 0  // Ensure it's never NaN
+    aiStats.value.totalItems = estimatedTotalItems || 0
     
-    console.log('✅ Updated stats:', stats.value)
-    console.log('✅ User rank:', userRank.value)
-    console.log('✅ Items calculation:', {
-      itemsFoundCount,
-      itemsLostCount,
-      totalUsersCount,
-      userTotalItems,
-      estimatedTotalItems
-    })
   } catch (error: any) {
     console.error('Error loading profile:', error)
   } finally {
@@ -351,16 +410,13 @@ const loadCommunityStats = async () => {
     const data = await DashboardService.getCommunityStats()
     communityStats.value = data
     
-    // ✅ Get real claimed items count from backend
+    // Get real claimed items count from backend
     const claimedCount = await DashboardService.getClaimedItemsCount()
     
-    // ✅ Update only recentMatches and successRate (don't touch totalItems!)
-    aiStats.value.recentMatches = claimedCount  // ✅ Real count from /api/found-items/browse/claimed
-    aiStats.value.successRate = data.successRate || 0  // ✅ Real success rate from backend
+    // Update only recentMatches and successRate
+    aiStats.value.recentMatches = claimedCount
+    aiStats.value.successRate = data.successRate || 0
     
-    console.log('Community stats loaded:', data)
-    console.log('Claimed items count:', claimedCount)
-    console.log('AI stats after community load:', aiStats.value)
   } catch (error: any) {
     console.error('Error loading community stats:', error)
   } finally {
@@ -374,10 +430,61 @@ const loadRecentActivities = async () => {
   try {
     const activities = await DashboardService.getRecentActivity()
     
-    recentActivities.value = activities.map((activity: ActivityFeed) => {
+    // Transform API data to display format
+    recentActivities.value = activities.map((activity: any) => {
       const isFound = activity.type === 'FOUND'
+      const isLost = activity.type === 'LOST'
+      const isLostMatched = activity.type === 'LOST_MATCHED'      // ✅ Lost item matched with found
+      const isFoundNeedsVerify = activity.type === 'FOUND_VERIFY' // ✅ Found item needs verification
+      
       const timeDisplay = activity.timestamp ? formatTime(activity.timestamp) : 'Recently'
       
+      // ✅ LOST ITEM MATCHED - Direct claim
+      if (isLostMatched) {
+        return {
+          title: activity.title || 'Your Lost Item Found!',
+          description: activity.description || 'Your lost item has been found! Click to claim.',
+          time: timeDisplay,
+          status: 'Ready to Claim',
+          statusClass: 'bg-green-100 text-green-700 border border-green-300',
+          bgColor: 'bg-gradient-to-br from-green-400 to-emerald-500',
+          iconColor: 'text-white',
+          icon: 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z',
+          type: 'LOST_MATCHED',
+          clickable: true,
+          modalType: 'CLAIM',  // ✅ Opens ItemClaimModal
+          claimId: activity.claimId,
+          category: activity.category || 'Electronics',
+          color: activity.color || 'Blue',
+          imageUrl: activity.imageUrl,
+          returnLocation: activity.returnLocation || 'office',
+          returnDate: activity.returnDate,
+          returnTime: activity.returnTime
+        }
+      }
+      
+      // ✅ FOUND ITEM NEEDS VERIFICATION - Upload student card
+      if (isFoundNeedsVerify) {
+        return {
+          title: activity.title || 'Verification Required',
+          description: activity.description || 'Upload your student card to verify ownership.',
+          time: timeDisplay,
+          status: 'Verify Ownership',
+          statusClass: 'bg-blue-100 text-blue-700 border border-blue-300',
+          bgColor: 'bg-gradient-to-br from-blue-400 to-indigo-500',
+          iconColor: 'text-white',
+          icon: 'M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z',
+          type: 'FOUND_VERIFY',
+          clickable: true,
+          modalType: 'VERIFY',  // ✅ Opens StudentCardVerificationModal
+          claimId: activity.claimId,
+          category: activity.category || 'Electronics',
+          color: activity.color || 'Blue',
+          imageUrl: activity.imageUrl
+        }
+      }
+      
+      // Existing handling for FOUND and LOST
       return {
         title: activity.title,
         description: activity.description,
@@ -388,10 +495,15 @@ const loadRecentActivities = async () => {
         iconColor: isFound ? 'text-green-600' : 'text-red-600',
         icon: isFound 
           ? 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z'
-          : 'M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z'
+          : 'M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z',
+        type: activity.type,
+        clickable: false,
+        modalType: null,
+        claimId: null
       }
     })
     
+    // If no activities, show placeholder
     if (recentActivities.value.length === 0) {
       recentActivities.value = [{
         title: 'No recent activities',
@@ -401,26 +513,120 @@ const loadRecentActivities = async () => {
         statusClass: 'bg-blue-100 text-blue-700',
         bgColor: 'bg-blue-100',
         iconColor: 'text-blue-600',
-        icon: 'M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z'
+        icon: 'M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z',
+        type: 'INFO',
+        clickable: false,
+        modalType: null,
+        claimId: null
       }]
     }
   } catch (error: any) {
     console.error('Error loading activities:', error)
     toast.error('Failed to load recent activities')
-    
-    recentActivities.value = [{
-      title: 'Unable to load activities',
-      description: 'Please refresh the page',
-      time: 'Now',
-      status: 'Error',
-      statusClass: 'bg-red-100 text-red-700',
-      bgColor: 'bg-red-100',
-      iconColor: 'text-red-600',
-      icon: 'M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z'
-    }]
   } finally {
     isLoadingActivities.value = false
   }
+}
+
+// ✅ Handle activity click - Opens DIFFERENT modals based on type
+const handleActivityClick = (activity: any) => {
+  console.log('=== ACTIVITY CLICKED ===')
+  console.log('Activity:', activity)
+  console.log('Modal Type:', activity.modalType)
+  console.log('========================')
+  
+  if (!activity.clickable) {
+    console.log('⚠️ Activity is not clickable')
+    return
+  }
+  
+  if (!activity.claimId) {
+    toast.error('No claim ID available')
+    return
+  }
+  
+  // Set selected item data
+  selectedItem.value = {
+    claimId: activity.claimId,
+    title: activity.title,
+    category: activity.category || 'Electronics',
+    color: activity.color || 'Blue',
+    description: activity.description,
+    imageUrl: activity.imageUrl || 'https://via.placeholder.com/400',
+    returnLocation: activity.returnLocation,
+    returnDate: activity.returnDate,
+    returnTime: activity.returnTime
+  }
+  
+  // ✅ Open DIFFERENT modal based on modalType
+  if (activity.modalType === 'CLAIM') {
+    // Lost item matched → Direct claim modal
+    console.log('✅ Opening ItemClaimModal (Lost item claim)')
+    showClaimModal.value = true
+    toast.info('Review item details and claim')
+  } else if (activity.modalType === 'VERIFY') {
+    // Found item → Verification modal
+    console.log('✅ Opening VerificationModal (Found item verification)')
+    showVerificationModal.value = true
+    toast.info('Upload student card for verification')
+  }
+}
+
+// ✅ Close claim modal
+const closeClaimModal = () => {
+  console.log('Closing claim modal')
+  showClaimModal.value = false
+  selectedItem.value = null
+}
+
+// ✅ Handle item claimed
+const handleItemClaimed = (item: any) => {
+  console.log('=== ITEM CLAIMED ===')
+  console.log('Item:', item)
+  
+  // Remove from activities
+  recentActivities.value = recentActivities.value.filter(
+    activity => activity.claimId !== item.claimId
+  )
+  
+  toast.success('Item claimed! Reload to see updated stats.')
+  
+  // Reload data
+  setTimeout(() => {
+    loadRecentActivities()
+    loadUserProfile()
+  }, 1000)
+}
+
+// ✅ Close verification modal
+const closeVerificationModal = () => {
+  console.log('Closing verification modal')
+  showVerificationModal.value = false
+  selectedItem.value = null
+}
+
+// ✅ Handle verification submitted
+const handleVerificationSubmitted = (item: any) => {
+  console.log('=== VERIFICATION SUBMITTED ===')
+  console.log('Item:', item)
+  
+  // Update activity status
+  const activityIndex = recentActivities.value.findIndex(
+    activity => activity.claimId === item.claimId
+  )
+  
+  if (activityIndex !== -1) {
+    recentActivities.value[activityIndex] = {
+      ...recentActivities.value[activityIndex],
+      status: 'Pending Verification',
+      statusClass: 'bg-orange-100 text-orange-700 border border-orange-300',
+      description: 'Verification submitted. Waiting for admin approval.',
+      clickable: false,
+      modalType: null
+    }
+  }
+  
+  toast.success('Verification submitted! Check back for admin approval.')
 }
 
 // Format timestamp
@@ -468,5 +674,51 @@ onMounted(async () => {
     loadCommunityStats(),
     loadRecentActivities()
   ])
+  
+  // ✅ TEMPORARY: Add test activities for both scenarios
+  console.log('💡 Adding test activities...')
+  
+  // Test 1: Lost item matched (direct claim)
+  recentActivities.value.unshift({
+    title: '🎉 Your iPhone 13 Pro Found!',
+    description: 'Click to review details and claim your item',
+    time: 'Just now',
+    status: 'Ready to Claim',
+    statusClass: 'bg-green-100 text-green-700 border border-green-300',
+    bgColor: 'bg-gradient-to-br from-green-400 to-emerald-500',
+    iconColor: 'text-white',
+    icon: 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z',
+    type: 'LOST_MATCHED',
+    clickable: true,
+    modalType: 'CLAIM',
+    claimId: 999,
+    category: 'Electronics',
+    color: 'Pacific Blue',
+    imageUrl: 'https://via.placeholder.com/400/0ea5e9/ffffff?text=iPhone+13',
+    returnLocation: 'office',
+    returnDate: '2025-12-10',
+    returnTime: '14:00'
+  })
+  
+  // Test 2: Found item needs verification
+  recentActivities.value.unshift({
+    title: '📄 Laptop Found - Verify Ownership',
+    description: 'Upload your student card to verify and claim',
+    time: '5 min ago',
+    status: 'Verify Ownership',
+    statusClass: 'bg-blue-100 text-blue-700 border border-blue-300',
+    bgColor: 'bg-gradient-to-br from-blue-400 to-indigo-500',
+    iconColor: 'text-white',
+    icon: 'M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z',
+    type: 'FOUND_VERIFY',
+    clickable: true,
+    modalType: 'VERIFY',
+    claimId: 888,
+    category: 'Electronics',
+    color: 'Silver',
+    imageUrl: 'https://via.placeholder.com/400/6366f1/ffffff?text=Laptop'
+  })
+  
+  console.log('✅ Test activities added!')
 })
 </script>

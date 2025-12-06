@@ -50,6 +50,23 @@ export class FoundItemService {
       formData.append('specialMarking', data.specialMarking)
     }
     
+    if (data.location) {
+      formData.append('location', data.location)
+    }
+    
+    // ✅ NEW: Add return location fields
+    if (data.returnLocation) {
+      formData.append('returnLocation', data.returnLocation)
+    }
+    
+    if (data.returnDate) {
+      formData.append('returnDate', data.returnDate)
+    }
+    
+    if (data.returnTime) {
+      formData.append('returnTime', data.returnTime)
+    }
+    
     // Add image file if provided
     if (imageFile) {
       formData.append('image', imageFile)

@@ -65,6 +65,10 @@ export interface FoundItemRequest {
   brand: string
   specialMarking?: string
   location?: string
+  // ✅ NEW: Return location fields
+  returnLocation?: string  // 'office' or 'personal'
+  returnDate?: string      // 'YYYY-MM-DD'
+  returnTime?: string      // 'HH:MM'
 }
 
 // ============= LOST CLAIM TYPES =============
@@ -99,11 +103,12 @@ export interface LostClaimRequest {
 
 // ============= DASHBOARD TYPES =============
 export interface ActivityFeed {
-  type: 'FOUND' | 'LOST'
+  type: 'FOUND' | 'LOST' | 'MATCHED'  // ✅ Added MATCHED type
   title: string
   description: string
   timestamp: string
   timeAgo?: string  // Optional - backend may provide formatted time
+  claimId?: number  // ✅ NEW: For matched items, link to claim page
 }
 
 export interface DashboardStats {

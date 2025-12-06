@@ -7,7 +7,7 @@
     <div class="mt-2">
       <div 
         v-if="!preview"
-        @click="$refs.fileInput.click()"
+        @click="fileInput?.click()"
         @dragover.prevent="isDragging = true"
         @dragleave.prevent="isDragging = false"
         @drop.prevent="handleFileDrop"
